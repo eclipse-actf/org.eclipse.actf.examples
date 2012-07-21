@@ -19,6 +19,7 @@ import org.eclipse.actf.ai.internal.ui.scripteditor.event.SyncTimeEvent;
 import org.eclipse.actf.ai.internal.ui.scripteditor.event.SyncTimeEventListener;
 import org.eclipse.actf.ai.scripteditor.data.ScriptData;
 import org.eclipse.actf.ai.scripteditor.preferences.CSVRulePreferenceUtil;
+import org.eclipse.actf.ai.tts.ITTSEngine;
 import org.eclipse.actf.ai.ui.scripteditor.views.EditPanelView;
 import org.eclipse.actf.ai.ui.scripteditor.views.IUNIT;
 import org.eclipse.actf.ai.ui.scripteditor.views.ScriptListView;
@@ -56,6 +57,10 @@ public class EditPanelTab implements IUNIT, SyncTimeEventListener {
 	 */
 	Composite ownComposite;
 
+	private String[] langList = ITTSEngine.LANGSET
+			.toArray(new String[ITTSEngine.LANGSET.size()]);
+
+	
 	// Own instance
 	static private EditPanelTab ownInst = null;
 
@@ -90,7 +95,7 @@ public class EditPanelTab implements IUNIT, SyncTimeEventListener {
 	private int updateScriptStartTime = 0;
 
 	// Language of description
-	private int currentDescLang = DESC_LANG_EN;
+	private String currentDescLang = "en-US";
 
 	// Edit Panel part
 	private Label labelVPitch;
@@ -471,14 +476,23 @@ public class EditPanelTab implements IUNIT, SyncTimeEventListener {
 			comboLangLData.top = new FormAttachment(labelLang, 2);
 			comboLang = new Combo(ownComposite, SWT.DROP_DOWN);
 			comboLang.setLayoutData(comboLangLData);
-			comboLang.setItems(itemLang);
+			comboLang.setItems(langList);
 			if (Locale.getDefault().toString().startsWith("ja")) {
-				currentDescLang = DESC_LANG_JA;
+				for (int i = 0; i < langList.length; i++) {
+					if ("ja-JP".equals(langList[i])) {
+						comboLang.select(i);
+						break;
+					}
+				}
 			} else {
-				// Default : English selected
-				currentDescLang = DESC_LANG_EN;
-			}
-			comboLang.select(currentDescLang);
+				// TODO
+				for (int i = 0; i < langList.length; i++) {
+					if ("en-US".equals(langList[i])) {
+						comboLang.select(i);
+						break;
+					}
+				}
+			}			
 			// Add EventListener
 			comboLang.addListener(SWT.Selection, new DescLangListener());
 
@@ -672,20 +686,6 @@ public class EditPanelTab implements IUNIT, SyncTimeEventListener {
 	}
 
 	/**
-	 * Getter method : Get current Language of Description
-	 */
-	public int getLangDescription() {
-		return (currentDescLang);
-	}
-
-	/**
-	 * Setter method : Set current Language of Description
-	 */
-	public void setLangDescription(int lindex) {
-		currentDescLang = lindex;
-	}
-
-	/**
 	 * Local method : setVisible button Delete
 	 */
 	private void setVisibleDelete(boolean stat) {
@@ -802,8 +802,13 @@ public class EditPanelTab implements IUNIT, SyncTimeEventListener {
 
 		// Set Language of Description
 		currentDescLang = instScriptData.getExtendLang(index);
-		comboLang.select(currentDescLang);
-
+		for (int i = 0; i < langList.length; i++) {
+			if (langList[i].equals(currentDescLang)) {
+				comboLang.select(i);
+			}
+		}// TODO set default
+		
+		
 		// Set visible button
 		setVisibleAppend(true, true);
 		setVisibleDelete(true);
@@ -929,7 +934,7 @@ public class EditPanelTab implements IUNIT, SyncTimeEventListener {
 					.getScriptStartTime(0));
 			boolean extended = instScriptData.getExtendExtended(index);
 			boolean gender = instScriptData.getExtendGender(index);
-			int lang = instScriptData.getExtendLang(index);
+			String lang = instScriptData.getExtendLang(index);
 			int speed = instScriptData.getExtendSpeed(index);
 			int pitch = instScriptData.getExtendPitch(index);
 			int volume = instScriptData.getExtendVolume(index);
@@ -974,7 +979,11 @@ public class EditPanelTab implements IUNIT, SyncTimeEventListener {
 				comboLang.setBackground(PlatformUI.getWorkbench().getDisplay()
 						.getSystemColor(SWT.COLOR_WIDGET_BACKGROUND));
 			}
-			comboLang.select(lang);
+			for (int i = 0; i < langList.length; i++) {
+				if (langList[i].equals(lang)) {
+					comboLang.select(i);
+				}
+			}// TODO set default			
 		} else {
 			// Reset grayed color setting
 			chkBoxExtended.setGrayed(false);
@@ -1051,7 +1060,7 @@ public class EditPanelTab implements IUNIT, SyncTimeEventListener {
 
 	private boolean isDiffLang() {
 		boolean result = false;
-		int firstData;
+		String firstData;
 
 		// PickUP 1st data
 		ScriptData wrkData = (ScriptData) storeObjs[0];
@@ -1065,9 +1074,9 @@ public class EditPanelTab implements IUNIT, SyncTimeEventListener {
 			wrkData = (ScriptData) storeObjs[i];
 			index = instScriptData.getIndexScriptData(wrkData
 					.getScriptStartTime(0));
-			int nextData = instScriptData.getExtendLang(index);
+			String nextData = instScriptData.getExtendLang(index);
 			// Check value
-			if (firstData != nextData) {
+			if (!firstData.equals(nextData)) {
 				// detect different value
 				result = true;
 				break;
@@ -1182,7 +1191,7 @@ public class EditPanelTab implements IUNIT, SyncTimeEventListener {
 			return;
 		}
 		int extendSpeed = scaleVoiceSpeed.getSelection();
-		int extendLang = currentDescLang;
+		String extendLang = currentDescLang;
 		String currentDesc = textAreaDescription.getText();
 		// PickUP EndTime of current description
 		int newEndTime = TimeLineView.getInstance().setEndTimeVolumeLevel(
@@ -1326,9 +1335,10 @@ public class EditPanelTab implements IUNIT, SyncTimeEventListener {
 			int speed = scaleVoiceSpeed.getSelection();
 			int pitch = scaleVoicePitch.getSelection();
 			int volume = scaleVoiceVolume.getSelection();
+			String lang = langList[comboLang.getSelectionIndex()];
 
 			// SetUP Voice Manage
-			TimeLineView.getInstance().reqSetupScriptAudio(strGender, speed,
+			TimeLineView.getInstance().reqSetupScriptAudio(lang, strGender, speed,
 					pitch, volume);
 			// Play voice(Script Audio)
 			TimeLineView.getInstance().reqPlayScriptAudio(currentScriptText);
@@ -1349,9 +1359,9 @@ public class EditPanelTab implements IUNIT, SyncTimeEventListener {
 		public void widgetSelected(SelectionEvent e) {
 			// Get current Script text from Text Area
 			String currentScriptText = new String(textAreaDescription.getText());
-
+			
 			// Check length of String
-			if (!currentScriptText.isEmpty()) {
+			if (!currentScriptText.isEmpty()) {				
 				// Preview Voice
 				playPreviewDescription(currentScriptText);
 			}
@@ -1404,7 +1414,7 @@ public class EditPanelTab implements IUNIT, SyncTimeEventListener {
 			int extendSpeed = scaleVoiceSpeed.getSelection();
 			int extendPitch = scaleVoicePitch.getSelection();
 			int extendVolume = scaleVoiceVolume.getSelection();
-			int extendLang = currentDescLang;
+			String extendLang = currentDescLang;
 
 			// Check Update button mode
 			if (currentModeAppend && (startTime != updateScriptStartTime)) {
@@ -1561,7 +1571,7 @@ public class EditPanelTab implements IUNIT, SyncTimeEventListener {
 				int extendSpeed = scaleVoiceSpeed.getSelection();
 				int extendPitch = scaleVoicePitch.getSelection();
 				int extendVolume = scaleVoiceVolume.getSelection();
-				int extendLang = currentDescLang;
+				String extendLang = currentDescLang;
 
 				// Start delete multiple data
 				for (int i = 0; i < storeObjs.length; i++) {
@@ -1708,13 +1718,11 @@ public class EditPanelTab implements IUNIT, SyncTimeEventListener {
 				int extendSpeed = Integer.parseInt(extSpeed);
 				int extendPitch = Integer.parseInt(extPitch);
 				int extendVolume = Integer.parseInt(extVolume);
-				int extendLang = "ja".equals(extLang) ? DESC_LANG_JA
-						: DESC_LANG_EN;
 
 				// update Extended data
 				instScriptData.appendExtendData(index, startTime,
 						extendExtended, extendSex, extendSpeed, extendPitch,
-						extendVolume, extendLang);
+						extendVolume, extLang);
 			}
 		}
 	}
@@ -1726,7 +1734,7 @@ public class EditPanelTab implements IUNIT, SyncTimeEventListener {
 	 * @return result process : TRUE:success process, FALSE:faile process
 	 */
 	public boolean appendScriptData(int startTime, String strDescription,
-			boolean extended, boolean gender, int lang, int speed, int pitch,
+			boolean extended, boolean gender, String lang, int speed, int pitch,
 			int volume) {
 
 		// Extended parameters
@@ -1735,7 +1743,7 @@ public class EditPanelTab implements IUNIT, SyncTimeEventListener {
 		int extendSpeed = speed;
 		int extendPitch = pitch;
 		int extendVolume = volume;
-		int extendLang = lang;
+		String extendLang = lang;
 		int index = -1;
 
 		// Check preference setting of CSV save rule
@@ -1899,7 +1907,7 @@ public class EditPanelTab implements IUNIT, SyncTimeEventListener {
 			int currentSpeed = instScriptData.getExtendSpeed(index);
 			int currentPitch = instScriptData.getExtendPitch(index);
 			int currentVolume = instScriptData.getExtendVolume(index);
-			int currentLang = instScriptData.getExtendLang(index);
+			String currentLang = instScriptData.getExtendLang(index);
 
 			// Delete target ScriptData from List
 			instScriptData.deleteScriptData(index);
@@ -2240,8 +2248,8 @@ public class EditPanelTab implements IUNIT, SyncTimeEventListener {
 		public void handleEvent(Event e) {
 			// PickUP selection item index of Language of Description
 			Combo combo = (Combo) e.widget;
-			currentDescLang = combo.getSelectionIndex();
-
+			currentDescLang = langList[combo.getSelectionIndex()];
+			
 			// SetUP enabled status for multiple selection mode
 			if (currentMultiSelection) {
 				modifyMultiLang = true;

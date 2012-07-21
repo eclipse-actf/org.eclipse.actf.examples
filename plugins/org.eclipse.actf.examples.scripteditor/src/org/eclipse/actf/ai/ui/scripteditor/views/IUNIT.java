@@ -143,11 +143,6 @@ public interface IUNIT {
 	static final float SM_CAP_RATE_LATE = 11025; // 11025Hz : Sampling rate of
 													// capture voice (late mode)
 
-	// Language of Description
-	static final String[] itemLang = { "English", "Japanese" };
-	static final int DESC_LANG_EN = 0;
-	static final int DESC_LANG_JA = 1;
-
 	// temporary file interface
 	static final String DIR_TEMP_VOLLVL = "VOLLVL";
 	static final String FILE_TEMP_VOLLVL_PREFIX = "temp";

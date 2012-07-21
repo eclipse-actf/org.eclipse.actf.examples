@@ -1397,9 +1397,11 @@ public class TimeLineView extends ViewPart implements IUNIT,
 	/**
 	 * Setter method : Request Play voice(Script Audio) by ProTalker
 	 */
-	public void reqSetupScriptAudio(String strGender, int speed, int pitch,
+	public void reqSetupScriptAudio(String lang, String strGender, int speed, int pitch,
 			int volume) {
 		// SetUP extended parameters
+		voicePlayer.setLang(lang);
+
 		voicePlayer.setGender(strGender);
 		voicePlayer.setSpeed(speed);
 		voicePlayer.setPitch(pitch);
@@ -1468,21 +1470,13 @@ public class TimeLineView extends ViewPart implements IUNIT,
 		SoundMixer.getInstance().dispose();
 	}
 
-	/**
-	 * Request Start VoicePlayer
-	 */
-	public void reqStartVoicePlayer(String nowScriptText) {
-		// Start ProTalker
-		voicePlayer.speak(nowScriptText);
-	}
-
 	public void reqStartVoicePlayer(int index) {
-		// SetUP current Script
-		reqSetupScriptAudio((instScriptData.getExtendGender(index) ? "male"
+		// SetUP current Script		
+		reqSetupScriptAudio(instScriptData.getExtendLang(index),(instScriptData.getExtendGender(index) ? "male"
 				: "female"), instScriptData.getExtendSpeed(index),
 				instScriptData.getExtendPitch(index),
 				instScriptData.getExtendVolume(index));
-
+		
 		// Start ProTalker
 		voicePlayer.speak(instScriptData.getScriptData(index));
 	}
@@ -1547,7 +1541,7 @@ public class TimeLineView extends ViewPart implements IUNIT,
 	 * Update End Time of sampling data for Time Line
 	 */
 	public int setEndTimeVolumeLevel(String currentScript, int currentSpeed,
-			int currentLang) {
+			String currentLang) {
 
 		// get current Script data length (as Preview action)
 		int lengthSample = VolumeLevelCanvas.getInstance()
@@ -1633,7 +1627,7 @@ public class TimeLineView extends ViewPart implements IUNIT,
 	 *            : string of description
 	 * @return MORA counter
 	 */
-	public int sumMoraCount(String strDesc, int speed, int lang) {
+	public int sumMoraCount(String strDesc, int speed, String lang) {
 		int duration = 0;
 
 		// Calculate current pitch(speed)
@@ -1641,12 +1635,12 @@ public class TimeLineView extends ViewPart implements IUNIT,
 				: (VE_TIME_MORA_EN + (4 * (50 - speed)));
 
 		// Count character
-		if (lang == DESC_LANG_JA) {
+		if ("ja-JP".equalsIgnoreCase(lang)) {
 			// Japanese
 			duration = (int) ((float) nowPitch * voicePlayer
 					.sumMoraCountJp(strDesc));
 		} else {
-			// English
+			// English or other
 			duration = (int) ((float) nowPitch * (int) voicePlayer
 					.sumMoraCountEn(strDesc));
 		}

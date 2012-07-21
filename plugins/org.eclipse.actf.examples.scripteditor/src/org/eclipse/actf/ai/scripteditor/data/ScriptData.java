@@ -42,14 +42,14 @@ public class ScriptData implements IUNIT {
 		// 5)Extend : Volume of Machine Voice
 		private int Volume;
 
-		// Special)Extend : Language of Description
-		private int Lang;
+		// Language of Description
+		private String Lang;
 
 		/**
 		 * Constructor
 		 */
 		public StructExtendData(int starttime, boolean extended,
-				boolean gender, int speed, int pitch, int volume, int lang) {
+				boolean gender, int speed, int pitch, int volume, String lang) {
 			// Store index(Start Time)
 			StartTime = starttime;
 			// Store Extended data
@@ -112,7 +112,7 @@ public class ScriptData implements IUNIT {
 		/**
 		 * Getter method : Get Language of Description
 		 */
-		public int getLang() {
+		public String getLang() {
 			// return current Language of Description
 			return (Lang);
 		}
@@ -168,7 +168,7 @@ public class ScriptData implements IUNIT {
 		/**
 		 * Setter method : Set Language of Description
 		 */
-		public void setLang(int lang) {
+		public void setLang(String lang) {
 			// update current Language of Description
 			Lang = lang;
 		}
@@ -796,7 +796,7 @@ public class ScriptData implements IUNIT {
 	 * @param index
 	 * @return Index of Language
 	 */
-	public int getExtendLang(int index) {
+	public String getExtendLang(int index) {
 		// Get Structure of target Extended data
 		StructExtendData currentExtendData = (StructExtendData) ExtendList
 				.get(index);
@@ -806,7 +806,7 @@ public class ScriptData implements IUNIT {
 
 	public void appendExtendData(int index, int starttime,
 			Boolean extendExtended, Boolean extendSex, int extendSpeed,
-			int extendPitch, int extendVolume, int extendLang) {
+			int extendPitch, int extendVolume, String extendLang) {
 
 		// Create target Struct(Extended data)
 		StructExtendData newExtendData = new StructExtendData(starttime,
@@ -1062,7 +1062,6 @@ public class ScriptData implements IUNIT {
 			String strGender = new String((gender ? "male" : "female"));
 			String strExtended = new String(
 					(getExtendExtended(i) ? " extended=\"true\"" : ""));
-			String strLang = new String(((getExtendLang(i) == 1) ? "ja" : "en"));
 
 			// for WAV information
 			String strServerUri = "";
@@ -1082,7 +1081,7 @@ public class ScriptData implements IUNIT {
 					+ "</start>" + LINE_SEP);
 			tmpSB.append("\t  <duration>" + strDuration + "</duration>"
 					+ LINE_SEP);
-			tmpSB.append("\t  <description xml:lang=\"" + strLang + "\" "
+			tmpSB.append("\t  <description xml:lang=\"" + getExtendLang(i) + "\" "
 					+ "speed=\"" + strSpeed + "\" " + "gender=\"" + strGender
 					+ "\"" + strExtended + ">" + strDesc + "</description>"
 					+ LINE_SEP);
@@ -1169,9 +1168,6 @@ public class ScriptData implements IUNIT {
 			String strExtended = (getExtendExtended(index) ? "1" : "0");
 			// Get gender
 			String strGender = (getExtendGender(index) ? "male" : "female");
-			// Get language of description
-			String strLang = ((getExtendLang(index) == DESC_LANG_JA) ? "ja"
-					: "en");
 			// Get play voice speed
 			String strSpeed = String.valueOf(getExtendSpeed(index));
 			// Get play voice pitch
@@ -1192,7 +1188,7 @@ public class ScriptData implements IUNIT {
 			tmpSB.append(wavLocalPath + COLUMN_SEP);
 			tmpSB.append(strExtended + COLUMN_SEP);
 			tmpSB.append(strGender + COLUMN_SEP);
-			tmpSB.append(strLang + COLUMN_SEP);
+			tmpSB.append(getExtendLang(index) + COLUMN_SEP);
 			tmpSB.append(strSpeed + COLUMN_SEP);
 			tmpSB.append(strPitch + COLUMN_SEP);
 			tmpSB.append(strVolume + COLUMN_SEP);

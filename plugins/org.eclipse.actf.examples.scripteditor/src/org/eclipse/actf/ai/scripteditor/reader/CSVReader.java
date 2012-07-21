@@ -101,7 +101,7 @@ public class CSVReader implements IUNIT {
 	// variables for extended information
 	private boolean bkup_ext_extended = false;
 	private boolean bkup_ext_gender = true;
-	private int bkup_ext_lang = 0;
+	private String bkup_ext_lang = "en-US";
 	private int bkup_ext_speed = 50;
 	private int bkup_ext_pitch = 50;
 	private int bkup_ext_volume = 50;
@@ -117,7 +117,7 @@ public class CSVReader implements IUNIT {
 	// variables for extend information
 	private ArrayList<Boolean> list_ext_extended;
 	private ArrayList<Boolean> list_ext_gender;
-	private ArrayList<Integer> list_ext_lang;
+	private ArrayList<String> list_ext_lang;
 	private ArrayList<Integer> list_ext_speed;
 	private ArrayList<Integer> list_ext_pitch;
 	private ArrayList<Integer> list_ext_volume;
@@ -153,7 +153,7 @@ public class CSVReader implements IUNIT {
 		// Allocate array list for extend information
 		list_ext_extended = new ArrayList<Boolean>();
 		list_ext_gender = new ArrayList<Boolean>();
-		list_ext_lang = new ArrayList<Integer>();
+		list_ext_lang = new ArrayList<String>();
 		list_ext_speed = new ArrayList<Integer>();
 		list_ext_pitch = new ArrayList<Integer>();
 		list_ext_volume = new ArrayList<Integer>();
@@ -232,7 +232,7 @@ public class CSVReader implements IUNIT {
 			// reset all extend variables
 			bkup_ext_extended = false;
 			bkup_ext_gender = true;
-			bkup_ext_lang = 0;
+			bkup_ext_lang = "en-US";
 			bkup_ext_speed = 50;
 			bkup_ext_pitch = 50;
 			bkup_ext_volume = 50;
@@ -415,8 +415,7 @@ public class CSVReader implements IUNIT {
 				// Initialize Extended area for next start time
 				bkup_ext_extended = false;
 				bkup_ext_gender = true;
-				bkup_ext_lang = EditPanelView.getInstance()
-						.getInstanceTabEditPanel().getLangDescription();
+				bkup_ext_lang = "en-US";
 				bkup_ext_speed = 50;
 				bkup_ext_pitch = 50;
 				bkup_ext_volume = 50;
@@ -527,14 +526,15 @@ public class CSVReader implements IUNIT {
 		}
 		// Status 6 : PickUP language of Extend
 		else if (currentStatus == CSV_ANA_EXT_GEN) {
-			bkup_ext_lang = EditPanelView.getInstance()
-					.getInstanceTabEditPanel().getLangDescription();
+			bkup_ext_lang = "en-US";
 			if (nowStr != null) {
+				// Check limit
 				// Check limit
 				if ("ja".equals(nowStr) || "en".equals(nowStr)) {
 					// Set language
-					bkup_ext_lang = ("ja".equals(nowStr) ? DESC_LANG_JA
-							: DESC_LANG_EN);
+					bkup_ext_lang = ("ja".equals(nowStr) ? "ja-JP" : "en-US");
+				} else {
+					bkup_ext_lang = nowStr;
 				}
 			}
 			// Change mode to own process
@@ -953,7 +953,7 @@ public class CSVReader implements IUNIT {
 			// PickUP current Extend data from temporary list
 			boolean extended = list_ext_extended.get(i);
 			boolean gender = list_ext_gender.get(i);
-			int lang = list_ext_lang.get(i);
+			String lang = list_ext_lang.get(i);
 			int speed = list_ext_speed.get(i);
 			int pitch = list_ext_pitch.get(i);
 			int volume = list_ext_volume.get(i);
