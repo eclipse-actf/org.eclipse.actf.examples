@@ -106,7 +106,7 @@ public class DragDropFileReader {
 		instTimeLine.reqRedrawTimeLineCanvas(1);
 		instTimeLine.reqLoadVolumeLevelData();
 		instTimeLine.reqRedrawVolumeLevelCanvas(2);
-		instTimeLine.refreshScriptAudio();
+		// instTimeLine.refreshScriptAudio();
 		instTimeLine.rewindActionTimeLine();
 	}
 

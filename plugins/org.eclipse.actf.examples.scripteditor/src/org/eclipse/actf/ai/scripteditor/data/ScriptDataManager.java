@@ -12,10 +12,13 @@ package org.eclipse.actf.ai.scripteditor.data;
 
 import java.net.MalformedURLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.TreeSet;
 
+import org.eclipse.actf.ai.scripteditor.data.event.ScriptEvent;
+import org.eclipse.actf.ai.scripteditor.data.event.ScriptEventListener;
 import org.eclipse.actf.ai.scripteditor.util.TimeFormatUtil;
 import org.eclipse.actf.ai.scripteditor.util.XMLFileMessageBox;
 import org.eclipse.actf.util.FileUtils;
@@ -25,6 +28,8 @@ import org.eclipse.actf.util.FileUtils;
  * 
  */
 public class ScriptDataManager {
+
+	private static List<ScriptEventListener> SCRIPT_EVENT_LISTENERS = new ArrayList<ScriptEventListener>();
 
 	public class scriptDataComparator implements Comparator<IScriptData> {
 
@@ -89,9 +94,10 @@ public class ScriptDataManager {
 		return (ownInst);
 	}
 
-	public void clearData() {
+	public synchronized void clearData() {
 		iData.clear();
 		cData.clear();
+		fireScriptEvent(new ScriptEvent(ScriptEvent.CLEAR_DATA, this));
 	}
 
 	@Deprecated
@@ -137,23 +143,46 @@ public class ScriptDataManager {
 		return iData.toArray(new IScriptData[iData.size()]);
 	}
 
-	public boolean add(IScriptData isData) {
-		if (isData == null) {
+	public synchronized boolean add(IScriptData data) {
+		if (data == null) {
 			return false;
 		}
-		String tmpCharacter = isData.getCharacter();
+		String tmpCharacter = data.getCharacter();
 		if (tmpCharacter != null && tmpCharacter.length() > 0) {
 			cData.add(tmpCharacter);
 		}
-		return iData.add(isData);
+		if (iData.add(data)) {
+			fireScriptEvent(ScriptEvent.ADD_DATA, data, this);
+			return true;
+		}
+		return false;
+	}
+
+	public synchronized boolean addAll(Collection<IScriptData> data) {
+		for (IScriptData i : data) {
+			String tmpCharacter = i.getCharacter();
+			if (tmpCharacter != null && tmpCharacter.length() > 0) {
+				cData.add(tmpCharacter);
+			}
+		}
+		if (iData.addAll(data)) {
+			fireScriptEvent(new ScriptEvent(ScriptEvent.ADD_MULTIPUL_DATA,
+					data, this));
+			return true;
+		}
+		return false;
 	}
 
 	public boolean contains(IScriptData data) {
 		return iData.contains(data);
 	}
 
-	public boolean remove(IScriptData data) {
-		return iData.remove(data);
+	public synchronized boolean remove(IScriptData data) {
+		if (iData.remove(data)) {
+			fireScriptEvent(ScriptEvent.DELETE_DATA, data, this);
+			return true;
+		}
+		return false;
 	}
 
 	@Deprecated
@@ -466,4 +495,64 @@ public class ScriptDataManager {
 		ArrayList<String> characterList = new ArrayList<String>(cData);
 		return characterList;
 	}
+
+	/**
+	 * Add ScriptEvent Listener
+	 * 
+	 * @param listener
+	 */
+	public void addGuideListEventListener(ScriptEventListener listener) {
+		SCRIPT_EVENT_LISTENERS.add(listener);
+	}
+
+	/**
+	 * Remove ScriptListener
+	 * 
+	 * @param listener
+	 */
+	public void removeGuideListEventListener(ScriptEventListener listener) {
+		SCRIPT_EVENT_LISTENERS.remove(listener);
+	}
+
+	public void fireSelectDataEvent(IScriptData selectedData, Object source) {
+		fireScriptEvent(ScriptEvent.SELECT_DATA, selectedData, source);
+	}
+
+	public void fireDeselectDataEvent(Object source) {
+		fireScriptEvent(new ScriptEvent(ScriptEvent.DESELECT_DATA, source));
+	}
+
+	public void fireUpdateDataEvent(IScriptData updatedData, Object source) {
+		fireScriptEvent(ScriptEvent.UPDATE_DATA, updatedData, source);
+	}
+
+	public void fireUpdateMultipleDataEvent(
+			Collection<IScriptData> updatedData, Object source) {
+		if (updatedData != null) {
+			fireScriptEvent(new ScriptEvent(ScriptEvent.UPDATE_MULTIPUL_DATA,
+					updatedData, source));
+		}
+	}
+
+	public void firePlayEvent(IScriptData playingData, Object source) {
+		fireScriptEvent(ScriptEvent.PLAY_DATA, playingData, source);
+	}
+
+	private void fireScriptEvent(int type, IScriptData data, Object source) {
+		if (data != null) {
+			fireScriptEvent(new ScriptEvent(type, data, source));
+		}
+	}
+
+	/**
+	 * fire ScriptEvent
+	 * 
+	 * @param event
+	 */
+	private void fireScriptEvent(ScriptEvent event) {
+		for (ScriptEventListener listener : SCRIPT_EVENT_LISTENERS) {
+			listener.handleScriptEvent(event);
+		}
+	}
+
 }

@@ -11,11 +11,9 @@
 package org.eclipse.actf.examples.scripteditor.actions;
 
 import org.eclipse.actf.ai.internal.ui.scripteditor.EditPanelTab;
-import org.eclipse.actf.ai.internal.ui.scripteditor.PreviewPanel;
 import org.eclipse.actf.ai.internal.ui.scripteditor.VolumeLevelCanvas;
 import org.eclipse.actf.ai.scripteditor.data.ScriptDataManager;
 import org.eclipse.actf.ai.scripteditor.data.event.DataEventManager;
-import org.eclipse.actf.ai.scripteditor.data.event.GuideListEvent;
 import org.eclipse.actf.ai.scripteditor.data.event.LabelEvent;
 import org.eclipse.actf.ai.scripteditor.reader.SAXReader;
 import org.eclipse.actf.ai.scripteditor.util.WebBrowserFactory;
@@ -65,10 +63,7 @@ public class FileOpenAction implements IWorkbenchWindowActionDelegate {
 
 	private void preProcess() {
 		VolumeLevelCanvas.setVolumeLevelFilePath(null);
-		dataEventManager.fireLabelEvent(new LabelEvent(LabelEvent.CLEAR_LABEL,
-				null, this)); // clear current data
-		dataEventManager.fireGuideListEvent(new GuideListEvent(
-				GuideListEvent.CLEAR_DATA, null, this));
+		scriptManager.clearData();
 	}
 
 	private void postProcess() {
@@ -92,7 +87,7 @@ public class FileOpenAction implements IWorkbenchWindowActionDelegate {
 		instTimeLine.reqRedrawTimeLineCanvas(1);
 		instTimeLine.reqLoadVolumeLevelData();
 		instTimeLine.reqRedrawVolumeLevelCanvas(2);
-		instTimeLine.refreshScriptAudio();
+		// instTimeLine.refreshScriptAudio();
 		instTimeLine.rewindActionTimeLine();
 	}
 

@@ -22,9 +22,10 @@ import org.eclipse.actf.ai.scripteditor.data.DataUtil;
 import org.eclipse.actf.ai.scripteditor.data.IScriptData;
 import org.eclipse.actf.ai.scripteditor.data.ScriptDataManager;
 import org.eclipse.actf.ai.scripteditor.data.event.DataEventManager;
-import org.eclipse.actf.ai.scripteditor.data.event.GuideListEvent;
 import org.eclipse.actf.ai.scripteditor.data.event.LabelEvent;
 import org.eclipse.actf.ai.scripteditor.data.event.LabelEventListener;
+import org.eclipse.actf.ai.scripteditor.data.event.ScriptEvent;
+import org.eclipse.actf.ai.scripteditor.data.event.ScriptEventListener;
 import org.eclipse.actf.ai.ui.scripteditor.views.IUNIT;
 import org.eclipse.actf.ai.ui.scripteditor.views.TimeLineView;
 import org.eclipse.actf.examples.scripteditor.Activator;
@@ -48,7 +49,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 
 public class AudioComposite extends Composite implements IUNIT,
-		SyncTimeEventListener, LabelEventListener {
+		SyncTimeEventListener, LabelEventListener, ScriptEventListener {
 
 	static private AudioComposite ownInst = null;
 
@@ -94,8 +95,6 @@ public class AudioComposite extends Composite implements IUNIT,
 
 	private List<IScriptData> resultListUp = new ArrayList<IScriptData>();
 	private List<IScriptData> resultListDown = new ArrayList<IScriptData>();
-	private List<IScriptData> resultListMoveUp = new ArrayList<IScriptData>();
-	private List<IScriptData> resultListMoveDown = new ArrayList<IScriptData>();
 
 	/**
 	 * @category Constructor
@@ -144,23 +143,15 @@ public class AudioComposite extends Composite implements IUNIT,
 		dragLabel.setVisible(stat);
 	}
 
-	private void clearLabel(int type) {
-		for (IScriptData data : scriptManager.getDataList(type)) {
-			Label label = labelMap.get(data);
-			if (label != null) {
-				label.dispose();
-				label = null;
-				labelMap.remove(data);
-			} else {
-				Label guide = guideMarkMap.get(data);
-				if (guide != null) {
-					guide.dispose();
-					guide = null;
-					guideMarkMap.remove(data);
-				}
-			}
+	private void clearLabel() {
+		for (Label label : labelMap.values()) {
+			label.dispose();
+		}
+		for (Label label : guideMarkMap.values()) {
+			label.dispose();
 		}
 		labelMap.clear();
+		guideMarkMap.clear();
 	}
 
 	private void setLocationBorderTimeLine(int x) {
@@ -181,8 +172,25 @@ public class AudioComposite extends Composite implements IUNIT,
 
 	}
 
-	private void refreshScriptAudio() {
-		clearLabel(IScriptData.TYPE_AUDIO);
+	/**
+	 * @category Setter Method
+	 * @purpose Synchronized Time Line
+	 */
+	private void synchronizeTimeLine(int currentTime) {
+		// Calculate current x-point by now TimeLine
+		int x = (currentTime - (currentTimeLineLocation * TL_DEF_SCROL_COMP_SCALE))
+				/ TIME2PIXEL;
+
+		// Update location for border of TimeLine
+		setLocationBorderTimeLine(x);
+	}
+
+	private void refreshTimeLine(int nowCnt) {
+		// Update counter of location of TimeLine
+		currentTimeLineLocation = nowCnt;
+
+		// Redraw own Composite of audio label
+		clearLabel();
 
 		int len = scriptManager.size();
 		if (len > 0) {
@@ -199,30 +207,6 @@ public class AudioComposite extends Composite implements IUNIT,
 
 			}
 		}
-	}
-
-	/**
-	 * @category Setter Method
-	 * @purpose Synchronized Time Line
-	 */
-	public void synchronizeTimeLine(int nowTime) {
-		// Calculate current x-point by now TimeLine
-		int x = (nowTime - (currentTimeLineLocation * TL_DEF_SCROL_COMP_SCALE))
-				/ TIME2PIXEL;
-
-		// Update location for border of TimeLine
-		setLocationBorderTimeLine(x);
-	}
-
-	/**
-	 * Setter method : Set current location of TimeLine
-	 */
-	public void refreshTimeLine(int nowCnt) {
-		// Update counter of location of TimeLine
-		currentTimeLineLocation = nowCnt;
-
-		// Redraw own Composite of audio label
-		refreshScriptAudio();
 	}
 
 	private void createMouseDragLabel(IScriptData data, int startTime,
@@ -379,8 +363,7 @@ public class AudioComposite extends Composite implements IUNIT,
 		final IScriptData labelData = data;
 		newAudio.addMouseListener(new MouseAdapter() {
 			public void mouseUp(MouseEvent e) {
-				dataEventManager.fireGuideListEvent(new GuideListEvent(
-						GuideListEvent.SET_DATA, labelData, this));
+				scriptManager.fireSelectDataEvent(labelData, this);
 			}
 		});
 		// for TEST
@@ -486,20 +469,6 @@ public class AudioComposite extends Composite implements IUNIT,
 		}
 	}
 
-	private boolean checkDuplicateMoveAll(IScriptData data) {
-
-		resultListMoveUp = DataUtil.overlapCheckBefore(data,
-				IScriptData.TYPE_AUDIO);
-		resultListMoveDown = DataUtil.overlapCheckAfter(data,
-				IScriptData.TYPE_AUDIO);
-
-		if (resultListMoveUp.size() > 0 || resultListMoveDown.size() > 0) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-
 	private void updateAudioLabel(IScriptData data, Color col, int lineNo) {
 		Label targetLabel = labelMap.get(data);
 		if (targetLabel == null) {
@@ -566,10 +535,6 @@ public class AudioComposite extends Composite implements IUNIT,
 		targetLabel.redraw();
 		targetLabel.update();
 
-	}
-
-	public void putLabel(IScriptData data) {
-		putLabel(data, MODE_PUT);
 	}
 
 	private void createAllLabel(int type) {
@@ -661,22 +626,21 @@ public class AudioComposite extends Composite implements IUNIT,
 		// Move label by dragging.
 		if (mode == MODE_MOVE) {
 
-			if (checkDuplicateMoveAll(data)) {
-				boolean[] overlay = DataUtil.isOverlap(resultListMoveUp,
-						resultListMoveDown, data);
+			if (checkDuplicateAll(data)) {
+				boolean[] overlay = DataUtil.isOverlap(resultListUp,
+						resultListDown, data);
 
 				int pos = 0;
-				for (int i = 0; i < resultListMoveUp.size(); i++, pos++) {
-					updateAudioLabel(resultListMoveUp.get(i),
-							getColor(overlay[i], resultListMoveUp.get(i)), i);
+				for (int i = 0; i < resultListUp.size(); i++, pos++) {
+					updateAudioLabel(resultListUp.get(i),
+							getColor(overlay[i], resultListUp.get(i)), i);
 				}
 				createLabel(data, getColor(overlay[pos], data), pos);
 				pos++;
 				// Redisplay labels which overlaid moved label.
-				for (int i = 0; i < resultListMoveDown.size(); i++, pos++) {
-					updateAudioLabel(resultListMoveDown.get(i),
-							getColor(overlay[pos], resultListMoveDown.get(i)),
-							pos);
+				for (int i = 0; i < resultListDown.size(); i++, pos++) {
+					updateAudioLabel(resultListDown.get(i),
+							getColor(overlay[pos], resultListDown.get(i)), pos);
 				}
 			} else {
 				Color col = getDisplay().getSystemColor(
@@ -915,21 +879,15 @@ public class AudioComposite extends Composite implements IUNIT,
 			newEndTime = newStartTime
 					+ (data.getEndTime() - startTimeMouseDragged);
 		}
-		// Check overlap of labels , before moving target label.
-		checkDuplicateAll(data);
+
 		// Delete the label before moving.
 		deleteAudioLabel(data);
 
-		// If you would change data, could not replace data,
-		// Therefore you have to delete old item here
-		// dataEventManager.fireAudioEvent(new AudioEvent(
-		// AudioEvent.DELETE_DATA, data, this));
-		dataEventManager.fireGuideListEvent(new GuideListEvent(
-				GuideListEvent.DELETE_DATA, data, this));
+		// need to remove/add to change time
+		scriptManager.remove(data);
 
 		data.setStartTime(newStartTime);
 		if (data.isWavEnabled()) {
-			// Exchange end time to WAV time
 			newEndTime = newEndTimeWav;
 			data.setWavEndTime(newEndTime);
 		} else {
@@ -938,12 +896,9 @@ public class AudioComposite extends Composite implements IUNIT,
 
 		putLabel(data, MODE_MOVE);
 
-		// Expand Composite of TimeLine
-		instParentView.adjustEndTimeLine();
-		dataEventManager.fireGuideListEvent(new GuideListEvent(
-				GuideListEvent.SET_DATA, data, this));
-		dataEventManager.fireGuideListEvent(new GuideListEvent(
-				GuideListEvent.ADD_DATA, data, this));
+		instParentView.adjustEndTimeLine(); // TODO use event
+		scriptManager.add(data);
+
 		execDataConvMouseDragged = false;
 	}
 
@@ -967,8 +922,7 @@ public class AudioComposite extends Composite implements IUNIT,
 					&& (e.button == 1) && currentDragStatus) {
 				if (e.widget instanceof Label) {
 					selectLabel = (Label) e.widget;
-					dataEventManager.fireGuideListEvent(new GuideListEvent(
-							GuideListEvent.SET_DATA, data, this));
+					scriptManager.fireSelectDataEvent(data, this);
 				}
 				currentDragStatus = false;
 			} else if (!execDataConvMouseDragged && statusMouseDragged
@@ -1026,13 +980,14 @@ public class AudioComposite extends Composite implements IUNIT,
 	public void handleLabelEvent(LabelEvent e) {
 		switch (e.getEventType()) {
 		case LabelEvent.PUT_ALL_LABEL:
+			clearLabel();
 			createAllLabel(IScriptData.TYPE_AUDIO);
 			break;
 		case LabelEvent.PUT_LABEL:
 			if (e.getData().getType() != IScriptData.TYPE_AUDIO) {
 				return;
 			}
-			putLabel(e.getData());
+			putLabel(e.getData(), MODE_PUT);
 			break;
 		case LabelEvent.DELETE_LABEL:
 			if (e.getData().getType() != IScriptData.TYPE_AUDIO) {
@@ -1040,32 +995,38 @@ public class AudioComposite extends Composite implements IUNIT,
 			}
 			deleteAudioLabel(e.getData());
 			break;
-		case LabelEvent.DELETE_PLAY_MARK:
-			if (e.getData().getType() != IScriptData.TYPE_AUDIO) {
-				return;
-			}
-			deleteGuideMark(e.getData());
-			break;
-		case LabelEvent.ADD_PLAY_MARK:
-			if (e.getData().getType() != IScriptData.TYPE_AUDIO) {
-				return;
-			}
-			createGuideMark(e.getData());
-			break;
-		case LabelEvent.CLEAR_LABEL:
-			clearLabel(IScriptData.TYPE_AUDIO);
-			break;
 		}
 	}
 
 	public void handleSyncTimeEvent(SyncTimeEvent e) {
 		// Synchronize TimeLine view
-		if (e.getEventType() == SyncTimeEvent.SYNCHRONIZE_TIME_LINE) {
+		switch (e.getEventType()) {
+		case SyncTimeEvent.SYNCHRONIZE_TIME_LINE:
+		case SyncTimeEvent.ADJUST_TIME_LINE:
 			synchronizeTimeLine(e.getCurrentTime());
-			// } else if(e.getEventType() == SyncTimeEvent.ADJUST_TIME_LINE){
-			// synchronizeTimeLine(e.getCurrentTime());
-		} else if (e.getEventType() == SyncTimeEvent.REFRESH_TIME_LINE) {
+			break;
+		case SyncTimeEvent.REFRESH_TIME_LINE:
 			refreshTimeLine(e.getCurrentTime());
+			break;
+		}
+	}
+
+	@Override
+	public void handleScriptEvent(ScriptEvent e) {
+		switch (e.getEventType()) {
+		case ScriptEvent.CLEAR_DATA:
+			clearLabel();
+			break;
+		case ScriptEvent.ADD_DATA:
+			break;
+		case ScriptEvent.ADD_MULTIPUL_DATA:
+			break;
+		case ScriptEvent.DELETE_DATA:
+			break;
+		case ScriptEvent.UPDATE_DATA:
+			break;
+		case ScriptEvent.UPDATE_MULTIPUL_DATA:
+			break;
 		}
 	}
 

@@ -29,8 +29,8 @@ import org.eclipse.actf.ai.internal.ui.scripteditor.event.SyncTimeEvent;
 import org.eclipse.actf.ai.scripteditor.data.DataUtil;
 import org.eclipse.actf.ai.scripteditor.data.IScriptData;
 import org.eclipse.actf.ai.scripteditor.data.ScriptDataFactory;
+import org.eclipse.actf.ai.scripteditor.data.ScriptDataManager;
 import org.eclipse.actf.ai.scripteditor.data.event.DataEventManager;
-import org.eclipse.actf.ai.scripteditor.data.event.GuideListEvent;
 import org.eclipse.actf.ai.scripteditor.data.event.LabelEvent;
 import org.eclipse.actf.ai.scripteditor.preferences.CSVRulePreferenceUtil;
 import org.eclipse.actf.ai.scripteditor.util.SoundMixer;
@@ -176,6 +176,7 @@ public class CSVReader implements IUNIT {
 	private int currentProcess = CSV_PROC_IDLE;
 
 	private DataEventManager dataEventManager = null;
+	private ScriptDataManager scriptManager = ScriptDataManager.getInstance();
 	private EventManager eventManager = null;
 	static List<IScriptData> dataList = new ArrayList<IScriptData>();
 
@@ -1030,24 +1031,15 @@ public class CSVReader implements IUNIT {
 																		// low
 																		// level
 																		// function
-				dataEventManager.fireLabelEvent(new LabelEvent(
-						LabelEvent.CLEAR_LABEL, null, this)); // clear exists
 
 				if (CSV_SAVE_RULE_RENEWAL == CSVRulePreferenceUtil
 						.getPreferenceCsvSaveRule()) {
-					dataEventManager.fireGuideListEvent(new GuideListEvent(
-							GuideListEvent.CLEAR_DATA, null, this)); // clear
-																		// exists
+					scriptManager.clearData();
 				}
 
-				for (IScriptData data : dataList) {
-					dataEventManager.fireGuideListEvent(new GuideListEvent(
-							GuideListEvent.ADD_DATA, data, this));
-				}
-				// AudioEvent.PUT_AUDIO_LABEL check overlay each times , so it
-				// takes long time.
-				// Therefore, must use PUT_ALL_LABEL which check all labels
-				// overlay at once.
+				scriptManager.addAll(dataList);
+
+				// rewrite all labels at once
 				dataEventManager.fireLabelEvent(new LabelEvent(
 						LabelEvent.PUT_ALL_LABEL, null, this));
 			}
@@ -1065,6 +1057,7 @@ public class CSVReader implements IUNIT {
 	 * @category Local method : post process for CSV file reader
 	 */
 	private void postCSVReader() {
+		// TODO move to action
 		if (EditPanelView.getInstance() != null) {
 			if (EditPanelView.getInstance().getInstanceTabEditPanel() != null) {
 				EditPanelView.getInstance().getInstanceTabEditPanel()

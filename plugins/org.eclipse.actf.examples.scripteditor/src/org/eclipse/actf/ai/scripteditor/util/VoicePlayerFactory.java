@@ -11,11 +11,8 @@
 package org.eclipse.actf.ai.scripteditor.util;
 
 import java.io.File;
-import java.util.Set;
-import java.util.TreeSet;
 
 import org.eclipse.actf.ai.scripteditor.data.IScriptData;
-import org.eclipse.actf.ai.tts.ISAPIEngine;
 import org.eclipse.actf.ai.tts.ITTSEngine;
 import org.eclipse.actf.ai.voice.IVoice;
 import org.eclipse.actf.ai.voice.IVoiceEventListener;

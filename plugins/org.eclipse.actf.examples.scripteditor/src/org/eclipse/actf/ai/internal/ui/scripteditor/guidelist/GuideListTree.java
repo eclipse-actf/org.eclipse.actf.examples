@@ -25,9 +25,9 @@ import org.eclipse.actf.ai.scripteditor.data.IScriptData;
 import org.eclipse.actf.ai.scripteditor.data.ScriptDataFactory;
 import org.eclipse.actf.ai.scripteditor.data.ScriptDataManager;
 import org.eclipse.actf.ai.scripteditor.data.event.DataEventManager;
-import org.eclipse.actf.ai.scripteditor.data.event.GuideListEvent;
-import org.eclipse.actf.ai.scripteditor.data.event.GuideListEventListener;
 import org.eclipse.actf.ai.scripteditor.data.event.LabelEvent;
+import org.eclipse.actf.ai.scripteditor.data.event.ScriptEvent;
+import org.eclipse.actf.ai.scripteditor.data.event.ScriptEventListener;
 import org.eclipse.actf.ai.scripteditor.util.VoicePlayerFactory;
 import org.eclipse.actf.ai.scripteditor.util.WebBrowserFactory;
 import org.eclipse.actf.ai.scripteditor.util.XMLFileMessageBox;
@@ -70,7 +70,7 @@ import org.eclipse.swt.widgets.TreeItem;
 /**
  * 
  */
-public class GuideListTree implements IUNIT, GuideListEventListener {
+public class GuideListTree implements IUNIT, ScriptEventListener {
 
 	private static GuideListTree ownInst = null;
 
@@ -81,7 +81,8 @@ public class GuideListTree implements IUNIT, GuideListEventListener {
 	private boolean isUser = true;
 
 	// data manager
-	private ScriptDataManager scriptManager = null;
+	private ScriptDataManager scriptManager = ScriptDataManager.getInstance();
+
 	private TreeColumn column0 = null; // check
 	private TreeColumn column1 = null; // mark
 	private TreeColumn column2 = null; // Start Time
@@ -98,8 +99,9 @@ public class GuideListTree implements IUNIT, GuideListEventListener {
 
 	boolean headerSelectFlag = false;
 
-	private EventManager eventManager = null;
-	private DataEventManager dataEventManager = null;
+	private EventManager eventManager = EventManager.getInstance();
+	private DataEventManager dataEventManager = DataEventManager.getInstance();
+
 	private ScriptSorter sorter = new ScriptSorter();
 
 	private class ColumnSelectionAdapter extends SelectionAdapter {
@@ -132,15 +134,11 @@ public class GuideListTree implements IUNIT, GuideListEventListener {
 		treeViewer.setComparator(new GuildListComparator());
 		treeViewer.setSorter(sorter);
 
-		eventManager = EventManager.getInstance();
-		scriptManager = ScriptDataManager.getInstance();
-
-		dataEventManager = DataEventManager.getInstance();
-		dataEventManager.addGuideListEventListener(ownInst);
+		scriptManager.addGuideListEventListener(ownInst);
 		parentComposite.addDisposeListener(new DisposeListener() {
 			public void widgetDisposed(DisposeEvent e) {
 				// TODO other components
-				dataEventManager.removeGuideListEventListener(ownInst);
+				scriptManager.removeGuideListEventListener(ownInst);
 			}
 		});
 		initTable();
@@ -161,8 +159,7 @@ public class GuideListTree implements IUNIT, GuideListEventListener {
 			eventManager.fireSyncTimeEvent(new SyncTimeEvent(
 					SyncTimeEvent.ADJUST_TIME_LINE, data.getStartTime(), this));
 		}
-		dataEventManager.fireGuideListEvent(new GuideListEvent(
-				GuideListEvent.SET_DATA, data, this));
+		scriptManager.fireSelectDataEvent(data, this);
 
 		// Initialize sampling duration.
 		VolumeLevelCanvas.getInstance().clearSamplingLengthVolumeLevel();
@@ -293,8 +290,7 @@ public class GuideListTree implements IUNIT, GuideListEventListener {
 
 						data.setCharacter(character);
 						data.setDataCommit(true);
-						dataEventManager.fireGuideListEvent(new GuideListEvent(
-								GuideListEvent.REPALCE_DATA, data, this));
+						scriptManager.fireUpdateDataEvent(data, this);
 					}
 				});
 
@@ -329,8 +325,7 @@ public class GuideListTree implements IUNIT, GuideListEventListener {
 						}
 						data.setScenario(scenario);
 						data.setDataCommit(true);
-						dataEventManager.fireGuideListEvent(new GuideListEvent(
-								GuideListEvent.REPALCE_DATA, data, this));
+						scriptManager.fireUpdateDataEvent(data, this);
 
 					}
 				});
@@ -375,8 +370,7 @@ public class GuideListTree implements IUNIT, GuideListEventListener {
 						}
 						dataEventManager.fireLabelEvent(new LabelEvent(
 								LabelEvent.DELETE_LABEL, data, this));
-						dataEventManager.fireGuideListEvent(new GuideListEvent(
-								GuideListEvent.DELETE_DATA, data, this));
+						scriptManager.remove(data);
 
 						data.setType(IScriptData.TYPE_AUDIO);
 						data.setMark(NO_MARK);
@@ -399,10 +393,9 @@ public class GuideListTree implements IUNIT, GuideListEventListener {
 						data.setEndTime(newEndTime);
 						data.setDataCommit(true);
 
+						scriptManager.add(data);
 						dataEventManager.fireLabelEvent(new LabelEvent(
 								LabelEvent.PUT_LABEL, data, this));
-						dataEventManager.fireGuideListEvent(new GuideListEvent(
-								GuideListEvent.ADD_DATA, data, this));
 
 					}
 				});
@@ -447,8 +440,7 @@ public class GuideListTree implements IUNIT, GuideListEventListener {
 
 						dataEventManager.fireLabelEvent(new LabelEvent(
 								LabelEvent.DELETE_LABEL, data, this));
-						dataEventManager.fireGuideListEvent(new GuideListEvent(
-								GuideListEvent.DELETE_DATA, data, this));
+						scriptManager.remove(data);
 
 						data.setType(IScriptData.TYPE_CAPTION);
 						data.setMark(NO_MARK);
@@ -462,10 +454,9 @@ public class GuideListTree implements IUNIT, GuideListEventListener {
 
 						data.setDataCommit(true);
 
+						scriptManager.add(data);
 						dataEventManager.fireLabelEvent(new LabelEvent(
 								LabelEvent.PUT_LABEL, data, this));
-						dataEventManager.fireGuideListEvent(new GuideListEvent(
-								GuideListEvent.ADD_DATA, data, this));
 
 					}
 				});
@@ -546,17 +537,14 @@ public class GuideListTree implements IUNIT, GuideListEventListener {
 							dialog.open();
 							if (dialog.getReturnCode() == WavInputDialog.OK) {
 								if (data.getType() == IScriptData.TYPE_SCENARIO) {
-									updateLine(dialog.getData());
+									updateLine();
 									return;
 								}
 
 								if (!Validator.checkNull(data
 										.getStartTimeString())) {
 
-									dataEventManager
-											.fireGuideListEvent(new GuideListEvent(
-													GuideListEvent.DELETE_DATA,
-													data, this));
+									scriptManager.remove(data);
 
 									dataEventManager
 											.fireLabelEvent(new LabelEvent(
@@ -564,10 +552,7 @@ public class GuideListTree implements IUNIT, GuideListEventListener {
 													data, this));
 									data.setDataCommit(true);
 
-									dataEventManager
-											.fireGuideListEvent(new GuideListEvent(
-													GuideListEvent.ADD_DATA,
-													data, this));
+									scriptManager.add(data);
 
 									dataEventManager
 											.fireLabelEvent(new LabelEvent(
@@ -577,18 +562,13 @@ public class GuideListTree implements IUNIT, GuideListEventListener {
 								}
 
 							} else if (dialog.getReturnCode() == WavInputDialog.DELETE) {
-								dataEventManager
-										.fireGuideListEvent(new GuideListEvent(
-												GuideListEvent.DELETE_DATA,
-												data, this));
+								scriptManager.remove(data);
 
 								dataEventManager.fireLabelEvent(new LabelEvent(
 										LabelEvent.DELETE_LABEL, data, this));
 
-								dataEventManager
-										.fireGuideListEvent(new GuideListEvent(
-												GuideListEvent.ADD_DATA, data,
-												this));
+								scriptManager.add(data);
+
 								dataEventManager.fireLabelEvent(new LabelEvent(
 										LabelEvent.PUT_LABEL, data, this));
 
@@ -632,8 +612,7 @@ public class GuideListTree implements IUNIT, GuideListEventListener {
 							return;
 						}
 						data.setScriptComment(comment);
-						dataEventManager.fireGuideListEvent(new GuideListEvent(
-								GuideListEvent.REPALCE_DATA, data, this));
+						scriptManager.fireUpdateDataEvent(data, this);
 						DataUtil.debug();
 					}
 				});
@@ -702,7 +681,7 @@ public class GuideListTree implements IUNIT, GuideListEventListener {
 		control.setMenu(menu);
 	}
 
-	private void updateLine(IScriptData data) {
+	private void updateLine() {
 
 		treeViewer.refresh();
 
@@ -713,16 +692,6 @@ public class GuideListTree implements IUNIT, GuideListEventListener {
 			stat = XMLFileMessageBox.MB_STYLE_OVERWR;
 		}
 		scriptManager.setSaveRequired(stat, true);
-	}
-
-	private void addLine(IScriptData data) {
-		scriptManager.add(data); // TODO move to other
-		updateLine(data);
-	}
-
-	private void deleteLine(IScriptData data) {
-		scriptManager.remove(data); // TODO move to other
-		updateLine(data);
 	}
 
 	class InsertDownAction extends Action {
@@ -745,8 +714,7 @@ public class GuideListTree implements IUNIT, GuideListEventListener {
 				data.setMark(NO_MARK); // TOP ITEM NO MARK
 				data.setDataCommit(false);
 
-				dataEventManager.fireGuideListEvent(new GuideListEvent(
-						GuideListEvent.ADD_DATA, data, this));
+				scriptManager.add(data);
 
 				treeViewer.setSelection(new StructuredSelection(data), true);
 
@@ -758,8 +726,7 @@ public class GuideListTree implements IUNIT, GuideListEventListener {
 				data.setWavEndTimeString("");
 				data.setMark(NO_MARK);
 				//
-				dataEventManager.fireGuideListEvent(new GuideListEvent(
-						GuideListEvent.ADD_DATA, data, this));
+				scriptManager.add(data);
 			}
 		}
 	}
@@ -786,14 +753,16 @@ public class GuideListTree implements IUNIT, GuideListEventListener {
 			return;
 		}
 
-		dataEventManager.fireLabelEvent(new LabelEvent(LabelEvent.CLEAR_LABEL,
-				null, this));
+		// TODO check
+		// dataEventManager.fireLabelEvent(new
+		// LabelEvent(LabelEvent.CLEAR_LABEL,
+		// null, this));
+
 		for (IScriptData data : list) {
 			if (data.isDataCommit() == true
 					&& !Validator.checkNull(data.getScenario().trim())) {
 
-				dataEventManager.fireGuideListEvent(new GuideListEvent(
-						GuideListEvent.DELETE_DATA, data, this));
+				scriptManager.remove(data);
 				data.setType(IScriptData.TYPE_CAPTION);
 				data.setCaption(data.getScenario());
 				data.setScenario("");
@@ -803,13 +772,12 @@ public class GuideListTree implements IUNIT, GuideListEventListener {
 							data.getLang());
 					data.setEndTime(data.getStartTime() + endTime);
 				}
-				// ADD_AUDIO_DATA Event make clone data, therefore you do not
-				// need change clone.
-				dataEventManager.fireGuideListEvent(new GuideListEvent(
-						GuideListEvent.ADD_DATA, data, this));
+				// scriptManager.add(data);
+
 				// TODO : for child process
 			}
 		}
+		scriptManager.addAll(list);
 		dataEventManager.fireLabelEvent(new LabelEvent(
 				LabelEvent.PUT_ALL_LABEL, null, this));
 	}
@@ -832,8 +800,7 @@ public class GuideListTree implements IUNIT, GuideListEventListener {
 						}
 
 						IScriptData data = (IScriptData) items[i].getData();
-						dataEventManager.fireGuideListEvent(new GuideListEvent(
-								GuideListEvent.DELETE_DATA, data, this));
+						scriptManager.remove(data);
 						dataEventManager.fireLabelEvent(new LabelEvent(
 								LabelEvent.DELETE_LABEL, data, this));
 
@@ -940,30 +907,27 @@ public class GuideListTree implements IUNIT, GuideListEventListener {
 		}
 	}
 
-	public void handleGuideListEvent(GuideListEvent e) {
+	public void handleScriptEvent(ScriptEvent e) {
 		switch (e.getEventType()) {
-		case GuideListEvent.SET_DATA:
-		case GuideListEvent.PLAY_LABEL:
+		case ScriptEvent.SELECT_DATA:
+		case ScriptEvent.PLAY_DATA:
 			isUser = false;
 			IScriptData data = e.getData();
 			treeViewer.setSelection(new StructuredSelection(data), true);
 			isUser = true;
 			break;
-		case GuideListEvent.DESELECT_DATA:
+		case ScriptEvent.DESELECT_DATA:
 			treeViewer.setSelection(null, false);
 			break;
-		case GuideListEvent.ADD_DATA:
-			addLine(e.getData());
+		case ScriptEvent.ADD_DATA:
+		case ScriptEvent.ADD_MULTIPUL_DATA:
+		case ScriptEvent.UPDATE_DATA:
+		case ScriptEvent.UPDATE_MULTIPUL_DATA:
+		case ScriptEvent.DELETE_DATA:
+			updateLine();
 			break;
-		case GuideListEvent.REPALCE_DATA:
-			updateLine(e.getData());
-			break;
-		case GuideListEvent.DELETE_DATA:
-			deleteLine(e.getData());
-			break;
-		case GuideListEvent.CLEAR_DATA:
+		case ScriptEvent.CLEAR_DATA:
 			treeViewer.getTree().removeAll();
-			scriptManager.clearData();
 			break;
 		}
 

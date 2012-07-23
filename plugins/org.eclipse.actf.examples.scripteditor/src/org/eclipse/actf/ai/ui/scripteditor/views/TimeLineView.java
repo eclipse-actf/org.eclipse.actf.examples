@@ -12,7 +12,6 @@ package org.eclipse.actf.ai.ui.scripteditor.views;
 
 import java.net.URI;
 import java.util.Calendar;
-import java.util.List;
 
 import org.eclipse.actf.ai.internal.ui.scripteditor.AudioComposite;
 import org.eclipse.actf.ai.internal.ui.scripteditor.CaptionComposite;
@@ -29,7 +28,6 @@ import org.eclipse.actf.ai.internal.ui.scripteditor.event.TimerEventListener;
 import org.eclipse.actf.ai.scripteditor.data.IScriptData;
 import org.eclipse.actf.ai.scripteditor.data.ScriptDataManager;
 import org.eclipse.actf.ai.scripteditor.data.event.DataEventManager;
-import org.eclipse.actf.ai.scripteditor.data.event.GuideListEvent;
 import org.eclipse.actf.ai.scripteditor.data.event.LabelEvent;
 import org.eclipse.actf.ai.scripteditor.util.ScriptFileDropListener;
 import org.eclipse.actf.ai.scripteditor.util.SoundMixer;
@@ -214,7 +212,11 @@ public class TimeLineView extends ViewPart implements IUNIT,
 
 		// stop & close all process
 		reqStopScriptAudio();
-		reqStopCaptureAudio();
+
+		// Stop & Dispose SoundMixer
+		SoundMixer.getInstance().stopCaptureSound();
+		SoundMixer.getInstance().stopPlaySound();
+		SoundMixer.getInstance().dispose();
 
 		// instTimerSynchronizeTimeLine = null;
 
@@ -1014,7 +1016,8 @@ public class TimeLineView extends ViewPart implements IUNIT,
 				WebBrowserFactory.getInstance().pauseMedia();
 				currentStatusTimeLine = TL_STAT_EXTENDED;
 			}
-			reqStartVoicePlayer(data);
+			voicePlayer.speak(data);
+			voicePlayer.setPlayVoiceStatus(1); // for sampling
 		} else { // Case : play WAV file
 			if (data.isExtended()) {
 				WebBrowserFactory.getInstance().pauseMedia();
@@ -1047,21 +1050,6 @@ public class TimeLineView extends ViewPart implements IUNIT,
 		if (canvasVolumeLevel != null) {
 			canvasVolumeLevel.stopSampling();
 		}
-	}
-
-	/**
-	 * Setter method : Request Stop & Dispose capture audio of movie
-	 */
-	private void reqStopCaptureAudio() {
-		// Stop & Dispose SoundMixer
-		SoundMixer.getInstance().stopCaptureSound();
-		SoundMixer.getInstance().stopPlaySound();
-		SoundMixer.getInstance().dispose();
-	}
-
-	private void reqStartVoicePlayer(IScriptData data) {
-		voicePlayer.speak(data);
-		voicePlayer.setPlayVoiceStatus(1); // for sampling
 	}
 
 	/**
@@ -1112,8 +1100,7 @@ public class TimeLineView extends ViewPart implements IUNIT,
 			// replace label and data.
 			dataEventManager.fireLabelEvent(new LabelEvent(
 					LabelEvent.PUT_LABEL, data, this));
-			dataEventManager.fireGuideListEvent(new GuideListEvent(
-					GuideListEvent.REPALCE_DATA, data, this));
+			scriptManager.fireUpdateDataEvent(data, this);
 
 		}
 	}
@@ -1157,24 +1144,6 @@ public class TimeLineView extends ViewPart implements IUNIT,
 		// check min limit
 		else if (endTimeLine < TL_DEF_ETIME) {
 			endTimeLine = TL_DEF_ETIME;
-		}
-	}
-
-	/**
-	 * Refresh all Script Audio Label from current ScriptList
-	 */
-	public void refreshScriptAudio() {
-
-		List<IScriptData> list = scriptManager.getDataList();
-		// Reset script audio label on new time scale
-		for (int i = 0; i < list.size(); i++) {
-			IScriptData data = list.get(i);
-			if (data.getType() == IScriptData.TYPE_AUDIO) {
-				compositeAudio.putLabel(data);
-			} else if (data.getType() == IScriptData.TYPE_CAPTION) {
-				// TODO recover later
-				// compositeCaption.putLabel(data, MODE_PUT);
-			}
 		}
 	}
 
@@ -1573,10 +1542,7 @@ public class TimeLineView extends ViewPart implements IUNIT,
 						// TODO check data is stable or not(isDataCommit?)
 
 						if (data.getType() == IScriptData.TYPE_CAPTION) {
-							dataEventManager
-									.fireGuideListEvent(new GuideListEvent(
-											GuideListEvent.PLAY_LABEL, data,
-											this));
+							scriptManager.firePlayEvent(data, this);
 
 							instParentView.reqPlayCaption(data);
 
@@ -1589,10 +1555,7 @@ public class TimeLineView extends ViewPart implements IUNIT,
 									instParentView.reqStopScriptAudio();
 								}
 
-								dataEventManager
-										.fireGuideListEvent(new GuideListEvent(
-												GuideListEvent.PLAY_LABEL,
-												data, this));
+								scriptManager.firePlayEvent(data, this);
 
 								// Play Voice, Now!
 								instParentView.reqPlayAudio(data);
@@ -1630,10 +1593,7 @@ public class TimeLineView extends ViewPart implements IUNIT,
 									currentScriptDataIndex = -1;
 
 									// Finish high-light for target
-									dataEventManager
-											.fireGuideListEvent(new GuideListEvent(
-													GuideListEvent.DESELECT_DATA,
-													data, this));
+									scriptManager.fireDeselectDataEvent(this);
 								}
 							} else {
 								// increment duration counter
@@ -1729,9 +1689,6 @@ public class TimeLineView extends ViewPart implements IUNIT,
 			int nowTime = e.getCurrentTime();
 			updateLocationTimeLine(nowTime);
 
-			compositeAudio.synchronizeTimeLine(nowTime);
-			// TODO recover later
-			// compositeCaption.synchronizeTimeLine(nowTime);
 			canvasVolumeLevel.synchronizeTimeLine(nowTime);
 		}
 	}

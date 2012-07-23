@@ -113,7 +113,6 @@ public interface IUNIT {
 	static final float SM_CAP_RATE_LATE = 11025; // 11025Hz : Sampling rate of
 													// capture voice (late mode)
 
-
 	// file type for Drag&Drop file reader
 	static final int LD_FTYPE_XML = 0; // file type : XML file
 	static final int LD_FTYPE_CSV = 1; // file type : CSV file

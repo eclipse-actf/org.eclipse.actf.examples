@@ -22,9 +22,10 @@ import org.eclipse.actf.ai.scripteditor.data.DataUtil;
 import org.eclipse.actf.ai.scripteditor.data.IScriptData;
 import org.eclipse.actf.ai.scripteditor.data.ScriptDataManager;
 import org.eclipse.actf.ai.scripteditor.data.event.DataEventManager;
-import org.eclipse.actf.ai.scripteditor.data.event.GuideListEvent;
 import org.eclipse.actf.ai.scripteditor.data.event.LabelEvent;
 import org.eclipse.actf.ai.scripteditor.data.event.LabelEventListener;
+import org.eclipse.actf.ai.scripteditor.data.event.ScriptEvent;
+import org.eclipse.actf.ai.scripteditor.data.event.ScriptEventListener;
 import org.eclipse.actf.ai.ui.scripteditor.views.IUNIT;
 import org.eclipse.actf.ai.ui.scripteditor.views.TimeLineView;
 import org.eclipse.actf.examples.scripteditor.Activator;
@@ -48,7 +49,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 
 public class CaptionComposite extends Composite implements IUNIT,
-		SyncTimeEventListener, LabelEventListener {
+		SyncTimeEventListener, LabelEventListener, ScriptEventListener {
 
 	// instance of own class
 	static private CaptionComposite ownInst = null;
@@ -89,8 +90,6 @@ public class CaptionComposite extends Composite implements IUNIT,
 
 	protected List<IScriptData> resultListUp = new ArrayList<IScriptData>();
 	protected List<IScriptData> resultListDown = new ArrayList<IScriptData>();
-	protected List<IScriptData> resultListMoveUp = new ArrayList<IScriptData>();
-	protected List<IScriptData> resultListMoveDown = new ArrayList<IScriptData>();
 
 	/**
 	 * @category Constructor
@@ -151,30 +150,34 @@ public class CaptionComposite extends Composite implements IUNIT,
 		dragLabel.setVisible(stat);
 	}
 
-	public void clearLabel(int type) {
+	public void clearLabel() {
 
 		// clean up label objects
-		for (IScriptData data : scriptManager.getDataList()) {
-			if (data.getType() != type)
-				continue;
-			Label label = labelMap.get(data);
-			if (label != null) {
-				label.dispose();
-				label = null;
-				labelMap.remove(data);
-			} else {
-				Label guide = guideMarkMap.get(data);
-				if (guide != null) {
-					guide.dispose();
-					guide = null;
-					guideMarkMap.remove(data);
-				}
-			}
+		// for (IScriptData data : scriptManager.getDataList()) {
+		// if (data.getType() != type)
+		// continue;
+		// Label label = labelMap.get(data);
+		// if (label != null) {
+		// label.dispose();
+		// label = null;
+		// labelMap.remove(data);
+		// } else {
+		// Label guide = guideMarkMap.get(data);
+		// if (guide != null) {
+		// guide.dispose();
+		// guide = null;
+		// guideMarkMap.remove(data);
+		// }
+		// }
+		// }
+		for (Label label : labelMap.values()) {
+			label.dispose();
 		}
-
-		// make label map empty.
+		for (Label label : guideMarkMap.values()) {
+			label.dispose();
+		}
 		labelMap.clear();
-
+		guideMarkMap.clear();
 	}
 
 	protected void setLocationBorderTimeLine(int x) {
@@ -283,11 +286,7 @@ public class CaptionComposite extends Composite implements IUNIT,
 		return (newDeltaX);
 	}
 
-	public void deleteImage() {
-		guideMarkMap.clear();
-	}
-
-	public boolean deleteGuideMark(IScriptData data) {
+	private boolean deleteGuideLabel(IScriptData data) {
 		Label label = guideMarkMap.get(data);
 		if (label != null) {
 			label.dispose();
@@ -447,25 +446,6 @@ public class CaptionComposite extends Composite implements IUNIT,
 		}
 	}
 
-	/**
-	 * @param data
-	 * @return
-	 */
-	private boolean checkDuplicateMoveAll(IScriptData data) {
-
-		resultListMoveUp = DataUtil.overlapCheckBefore(data,
-				IScriptData.TYPE_CAPTION);
-		resultListMoveDown = DataUtil.overlapCheckAfter(data,
-				IScriptData.TYPE_CAPTION);
-
-		if (resultListMoveUp.size() > 0 || resultListMoveDown.size() > 0) {
-			return true;
-		} else {
-			return false;
-		}
-
-	}
-
 	private void updateLabel(IScriptData data, /* int cola */Color col,
 			int lineNo) {
 		Label targetLabel = labelMap.get(data);
@@ -616,23 +596,20 @@ public class CaptionComposite extends Composite implements IUNIT,
 		// Check exist target data from current List
 		// Move label by dragging.
 		if (mode == MODE_MOVE) {
-			resultListMoveDown.clear();
-			resultListMoveDown.clear();
-			if (checkDuplicateMoveAll(data)) {
-				boolean[] overlay = DataUtil.isOverlap(resultListMoveUp,
-						resultListMoveDown, data);
+			if (checkDuplicateAll(data)) {
+				boolean[] overlay = DataUtil.isOverlap(resultListUp,
+						resultListDown, data);
 				int pos = 0;
-				for (int i = 0; i < resultListMoveUp.size(); i++, pos++) {
-					updateLabel(resultListMoveUp.get(i),
-							getColor(overlay[i], resultListMoveUp.get(i)), i);
+				for (int i = 0; i < resultListUp.size(); i++, pos++) {
+					updateLabel(resultListUp.get(i),
+							getColor(overlay[i], resultListUp.get(i)), i);
 				}
 				createLabel(data, getColor(overlay[pos], data), pos);
 				pos++;
 				// Redisplay labels which overlaid moved label.
-				for (int i = 0; i < resultListMoveDown.size(); i++, pos++) {
-					updateLabel(resultListMoveDown.get(i),
-							getColor(overlay[pos], resultListMoveDown.get(i)),
-							pos);
+				for (int i = 0; i < resultListDown.size(); i++, pos++) {
+					updateLabel(resultListDown.get(i),
+							getColor(overlay[pos], resultListDown.get(i)), pos);
 				}
 			} else {
 				Color col = getDisplay().getSystemColor(
@@ -643,10 +620,6 @@ public class CaptionComposite extends Composite implements IUNIT,
 
 		} else if (labelMap.containsKey(data)) {
 			// not dragging
-
-			resultListUp.clear();
-			resultListDown.clear();
-
 			if (checkDuplicateAll(data)) {
 				boolean[] overlay = DataUtil.isOverlap(resultListUp,
 						resultListDown, data);
@@ -695,14 +668,14 @@ public class CaptionComposite extends Composite implements IUNIT,
 							getColor(overlay[pos], resultListDown.get(i)), pos);
 					pos++;
 				}
-				deleteGuideMark(data); // delete mark
+				deleteGuideLabel(data); // delete mark
 			} else {
 				createLabel(
 						data,
 						getDisplay().getSystemColor(
 								(data.isExtended() == false) ? SWT.COLOR_GREEN
 										: SWT.COLOR_BLUE), 0);
-				deleteGuideMark(data); // delete mark
+				deleteGuideLabel(data); // delete mark
 			}
 		}
 		return (result);
@@ -872,9 +845,8 @@ public class CaptionComposite extends Composite implements IUNIT,
 		checkDuplicateAll(data);
 		deleteLabel(data);
 
-		// delete old data, then add new data //TODO check
-		dataEventManager.fireGuideListEvent(new GuideListEvent(
-				GuideListEvent.DELETE_DATA, data, this));
+		// delete old data, then add new data
+		scriptManager.remove(data);
 
 		data.setStartTime(newStartTime);
 		if (data.getWavURI() != null && data.isWavEnabled()) {
@@ -887,10 +859,8 @@ public class CaptionComposite extends Composite implements IUNIT,
 		putLabel(data, MODE_MOVE);
 
 		instParentView.adjustEndTimeLine();
-		dataEventManager.fireGuideListEvent(new GuideListEvent(
-				GuideListEvent.SET_DATA, data, this));
-		dataEventManager.fireGuideListEvent(new GuideListEvent(
-				GuideListEvent.ADD_DATA, data, this));
+		scriptManager.add(data);
+
 		// End of Process
 		execDataConvMouseDragged = false;
 	}
@@ -912,8 +882,7 @@ public class CaptionComposite extends Composite implements IUNIT,
 
 				if (e.widget instanceof Label) {
 					selectLabel = (Label) e.widget;
-					dataEventManager.fireGuideListEvent(new GuideListEvent(
-							GuideListEvent.SET_DATA, data, this));
+					scriptManager.fireSelectDataEvent(data, this);
 				}
 				currentDragStatus = false;
 			} else if (!execDataConvMouseDragged && statusMouseDragged
@@ -996,7 +965,7 @@ public class CaptionComposite extends Composite implements IUNIT,
 		currentTimeLineLocation = nowCnt;
 
 		// Redraw own Composite of audio label
-		clearLabel(IScriptData.TYPE_CAPTION);
+		clearLabel();
 
 		int len = scriptManager.size();
 		if (len > 0) {
@@ -1012,19 +981,21 @@ public class CaptionComposite extends Composite implements IUNIT,
 	}
 
 	public void handleSyncTimeEvent(SyncTimeEvent e) {
-		// Synchronize TimeLine view
-		if (e.getEventType() == SyncTimeEvent.SYNCHRONIZE_TIME_LINE) {
+		switch (e.getEventType()) {
+		case SyncTimeEvent.SYNCHRONIZE_TIME_LINE:
+		case SyncTimeEvent.ADJUST_TIME_LINE:
 			synchronizeTimeLine(e.getCurrentTime());
-			// } else if(e.getEventType() == SyncTimeEvent.ADJUST_TIME_LINE){
-			// synchronizeTimeLine(e.getCurrentTime());
-		} else if (e.getEventType() == SyncTimeEvent.REFRESH_TIME_LINE) {
+			break;
+		case SyncTimeEvent.REFRESH_TIME_LINE:
 			refreshTimeLine(e.getCurrentTime());
+			break;
 		}
 	}
 
 	public void handleLabelEvent(LabelEvent e) {
 		switch (e.getEventType()) {
 		case LabelEvent.PUT_ALL_LABEL:
+			clearLabel();
 			createAllLabel(IScriptData.TYPE_CAPTION);
 			break;
 		case LabelEvent.PUT_LABEL:
@@ -1039,14 +1010,24 @@ public class CaptionComposite extends Composite implements IUNIT,
 			}
 			deleteLabel(e.getData());
 			break;
-		case LabelEvent.DELETE_PLAY_MARK:
-			if (e.getData().getType() != IScriptData.TYPE_CAPTION) {
-				return;
-			}
-			deleteGuideMark(e.getData());
+		}
+	}
+
+	@Override
+	public void handleScriptEvent(ScriptEvent e) {
+		switch (e.getEventType()) {
+		case ScriptEvent.CLEAR_DATA:
+			clearLabel();
 			break;
-		case LabelEvent.CLEAR_LABEL:
-			clearLabel(IScriptData.TYPE_CAPTION);
+		case ScriptEvent.ADD_DATA:
+			break;
+		case ScriptEvent.ADD_MULTIPUL_DATA:
+			break;
+		case ScriptEvent.DELETE_DATA:
+			break;
+		case ScriptEvent.UPDATE_DATA:
+			break;
+		case ScriptEvent.UPDATE_MULTIPUL_DATA:
 			break;
 		}
 	}

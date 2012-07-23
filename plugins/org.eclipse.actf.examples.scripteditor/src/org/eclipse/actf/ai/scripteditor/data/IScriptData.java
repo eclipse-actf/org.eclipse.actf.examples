@@ -79,9 +79,9 @@ public interface IScriptData {
 
 	public void setVgVolume(int vgVolume);
 
-//	public int getVgLang();
-//
-//	public void setVgLang(int vgLang);
+	// public int getVgLang();
+	//
+	// public void setVgLang(int vgLang);
 
 	public URI getWavURI();
 
@@ -118,7 +118,7 @@ public interface IScriptData {
 	public void setType(int type);
 
 	public void setLang(String lang);
-	
+
 	public String getLang();//
 
 	public String getCaption();//

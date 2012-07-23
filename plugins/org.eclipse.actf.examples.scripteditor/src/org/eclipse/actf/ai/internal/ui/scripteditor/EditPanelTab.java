@@ -21,7 +21,6 @@ import org.eclipse.actf.ai.scripteditor.data.IScriptData;
 import org.eclipse.actf.ai.scripteditor.data.ScriptDataFactory;
 import org.eclipse.actf.ai.scripteditor.data.ScriptDataManager;
 import org.eclipse.actf.ai.scripteditor.data.event.DataEventManager;
-import org.eclipse.actf.ai.scripteditor.data.event.GuideListEvent;
 import org.eclipse.actf.ai.scripteditor.data.event.LabelEvent;
 import org.eclipse.actf.ai.scripteditor.util.TimeFormatUtil;
 import org.eclipse.actf.ai.scripteditor.util.VoicePlayerFactory;
@@ -985,8 +984,7 @@ public class EditPanelTab implements IUNIT, SyncTimeEventListener {
 					// for change order, delete and add data.
 					dataEventManager.fireLabelEvent(new LabelEvent(
 							LabelEvent.DELETE_LABEL, currentData, this));
-					dataEventManager.fireGuideListEvent(new GuideListEvent(
-							GuideListEvent.DELETE_DATA, currentData, this));
+					scriptManager.remove(currentData);
 				}
 
 				currentData = getScriptData(currentData);
@@ -1010,8 +1008,7 @@ public class EditPanelTab implements IUNIT, SyncTimeEventListener {
 
 				dataEventManager.fireLabelEvent(new LabelEvent(
 						LabelEvent.PUT_LABEL, currentData, this));
-				dataEventManager.fireGuideListEvent(new GuideListEvent(
-						GuideListEvent.ADD_DATA, currentData, this));
+				scriptManager.add(currentData);
 
 				DataUtil.debug();
 
@@ -1045,11 +1042,12 @@ public class EditPanelTab implements IUNIT, SyncTimeEventListener {
 				data.setVgPitch(scaleVoicePitch.getSelection());
 				data.setVgVolume(scaleVoiceVolume.getSelection());
 
-				dataEventManager.fireGuideListEvent(new GuideListEvent(
-						GuideListEvent.REPALCE_DATA, data, this));
+				// scriptManager.fireGuideListEvent(new ScriptEvent(
+				// ScriptEvent.UPDATE_DATA, data, this));
 				dataEventManager.fireLabelEvent(new LabelEvent(
 						LabelEvent.PUT_LABEL, data, this));
 			}
+			scriptManager.fireUpdateMultipleDataEvent(currentListData, this);
 
 			endSelectMultiItems();
 			initDispEditPanel();
@@ -1148,8 +1146,7 @@ public class EditPanelTab implements IUNIT, SyncTimeEventListener {
 
 			dataEventManager.fireLabelEvent(new LabelEvent(
 					LabelEvent.DELETE_LABEL, currentData, this));
-			dataEventManager.fireGuideListEvent(new GuideListEvent(
-					GuideListEvent.DELETE_DATA, currentData, this));
+			scriptManager.remove(currentData);
 
 			initDispEditPanel();
 
@@ -1165,15 +1162,11 @@ public class EditPanelTab implements IUNIT, SyncTimeEventListener {
 		 */
 		private void deleteMultiScripts() {
 			for (IScriptData data : currentListData) {
+				scriptManager.remove(data);
 				dataEventManager.fireLabelEvent(new LabelEvent(
 						LabelEvent.DELETE_LABEL, data, this));
-				// dataEventManager.fireAudioEvent(new AudioEvent(
-				// AudioEvent.DELETE_DATA, data, this));
-				dataEventManager.fireGuideListEvent(new GuideListEvent(
-						GuideListEvent.DELETE_DATA, data, this));
 			}
-			dataEventManager.fireGuideListEvent(new GuideListEvent(
-					GuideListEvent.DESELECT_DATA, null, this));
+			scriptManager.fireDeselectDataEvent(this);
 
 			initDispEditPanel();
 

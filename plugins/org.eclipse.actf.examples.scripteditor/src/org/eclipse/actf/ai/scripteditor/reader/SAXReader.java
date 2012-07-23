@@ -14,6 +14,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
@@ -23,8 +25,6 @@ import org.eclipse.actf.ai.internal.ui.scripteditor.VolumeLevelCanvas;
 import org.eclipse.actf.ai.scripteditor.data.IScriptData;
 import org.eclipse.actf.ai.scripteditor.data.ScriptDataFactory;
 import org.eclipse.actf.ai.scripteditor.data.ScriptDataManager;
-import org.eclipse.actf.ai.scripteditor.data.event.DataEventManager;
-import org.eclipse.actf.ai.scripteditor.data.event.GuideListEvent;
 import org.eclipse.actf.ai.scripteditor.util.TimeFormatUtil;
 import org.eclipse.actf.ai.scripteditor.util.VoicePlayerFactory;
 import org.xml.sax.Attributes;
@@ -108,8 +108,8 @@ public class SAXReader extends DefaultHandler {
 	private int currentStatus = SAX_STAT_IDLE;
 	private int currentChildStatus = SAX_STAT_IDLE;
 
-	private ScriptDataManager scriptManager = null;
-	private DataEventManager dataEventManager = null;
+	private ScriptDataManager scriptManager = ScriptDataManager.getInstance();
+	private List<IScriptData> dataList = new ArrayList<IScriptData>();
 
 	/**
 	 * @throws IOException
@@ -118,13 +118,6 @@ public class SAXReader extends DefaultHandler {
 	public void startSAXReader(String fname) throws SAXException,
 			ParserConfigurationException {
 		try {
-			if (scriptManager == null) {
-				scriptManager = ScriptDataManager.getInstance();
-			}
-			if (dataEventManager == null) {
-				dataEventManager = DataEventManager.getInstance();
-			}
-
 			spf = SAXParserFactory.newInstance();
 			sp = spf.newSAXParser();
 			sp.parse(new File(fname), this);
@@ -356,7 +349,7 @@ public class SAXReader extends DefaultHandler {
 					data.setDataCommit(false);
 				}
 			}
-			
+
 			int length = VoicePlayerFactory.getInstance().getSpeakLength(data);
 			if (length > 0) {
 				data.setEndTime(data.getStartTime() + length);
@@ -365,9 +358,8 @@ public class SAXReader extends DefaultHandler {
 				data.setEndTime(data.getStartTime()
 						+ TimeFormatUtil.parseIntStartTime(bkup_duration));
 			}
-			
-			dataEventManager.fireGuideListEvent(new GuideListEvent(
-					GuideListEvent.ADD_DATA, data, this));
+
+			dataList.add(data);
 
 			// Clear status
 			currentStatus = SAX_STAT_IDLE;
@@ -406,6 +398,7 @@ public class SAXReader extends DefaultHandler {
 	 */
 	public void endDocument() throws SAXException {
 		// Clear status
+		scriptManager.addAll(dataList);
 		currentStatus = SAX_STAT_IDLE;
 	}
 

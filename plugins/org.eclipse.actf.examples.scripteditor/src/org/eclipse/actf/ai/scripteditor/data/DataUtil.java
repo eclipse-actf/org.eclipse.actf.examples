@@ -16,7 +16,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.actf.ai.scripteditor.util.TimeFormatUtil;
-import org.eclipse.actf.ai.ui.scripteditor.views.IUNIT;
 import org.eclipse.jface.viewers.TreeViewer;
 
 public class DataUtil {
@@ -284,7 +283,7 @@ public class DataUtil {
 		double duration = 0;
 
 		// Count character
-		if ("ja-JP".equalsIgnoreCase(lang)||"ja".equals(lang)) { //TODO
+		if ("ja-JP".equalsIgnoreCase(lang) || "ja".equals(lang)) { // TODO
 			// Japanese
 			duration = (sumMoraCountJp(strDesc) / (double) moraNum);
 		} else {

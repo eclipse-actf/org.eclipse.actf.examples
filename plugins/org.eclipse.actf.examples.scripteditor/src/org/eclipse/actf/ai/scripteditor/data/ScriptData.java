@@ -17,7 +17,7 @@ import org.eclipse.actf.ai.scripteditor.util.TimeFormatUtil;
 public class ScriptData implements IScriptData {
 
 	private String description = "";
-	private String lang = "en-US"; //TODO use locale
+	private String lang = "en-US"; // TODO use locale
 
 	private int startTime = 0;
 	private int startTimeOrg = 0;
@@ -104,11 +104,11 @@ public class ScriptData implements IScriptData {
 		return this.wavURI;
 	}
 
-	public void setLang(String lang){
-		//TODO validate
+	public void setLang(String lang) {
+		// TODO validate
 		this.lang = lang;
 	}
-	
+
 	public String getLang() {
 		return lang;
 	}

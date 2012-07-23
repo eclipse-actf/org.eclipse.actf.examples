@@ -21,14 +21,9 @@ public class LabelEvent extends EventObject {
 	 */
 	private static final long serialVersionUID = -8216230604599825989L;
 
-	public static final int ADD_PLAY_MARK = 0; //
 	public static final int PUT_ALL_LABEL = 1; // create or
 	public static final int PUT_LABEL = 2; // create or update label
-	//
 	public static final int DELETE_LABEL = 3;
-	public static final int DELETE_PLAY_MARK = 4;
-	public static final int DELETE_MARK = 5;
-	public static final int CLEAR_LABEL = 6;
 
 	private int eventType;
 	private IScriptData data;

@@ -146,7 +146,9 @@ public class TTMLUtil {
 						+ frame;
 
 				String strStartTime = TimeFormatUtil
-						.makeFormatHHMMSS_short(startTime / 1000) + ":" + frameS;
+						.makeFormatHHMMSS_short(startTime / 1000)
+						+ ":"
+						+ frameS;
 				int endTime = scriptData.getEndTime();
 
 				int duration = endTime - startTime;

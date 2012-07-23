@@ -671,15 +671,16 @@ public class VolumeLevelCanvas extends Canvas implements IUNIT,
 			if (getSamplingLengthMovieAudioLevel() > 0) {
 				if (VolumeLevelCanvas.getVolumeLevelFilePath() == null) {
 					// Create new temporary file for volume level
-					File fh = Activator.getDefault().createTempFile(
-							"temp", ".lvl");
+					File fh = Activator.getDefault().createTempFile("temp",
+							".lvl");
 					if (fh != null) {
 						// Get string of absolute file path(temporary file)
 						fpath = fh.getAbsolutePath();
 					}
 					VolumeLevelCanvas.setVolumeLevelFilePath(fpath);
 				} else {
-					fpath = VolumeLevelCanvas.getVolumeLevelFilePath().getPath();
+					fpath = VolumeLevelCanvas.getVolumeLevelFilePath()
+							.getPath();
 					fpath = fpath.replace("/", "\\");
 				}
 
@@ -816,8 +817,8 @@ public class VolumeLevelCanvas extends Canvas implements IUNIT,
 		}
 	}
 
-	//-----------------------------------//
-	
+	// -----------------------------------//
+
 	// Local data
 	private FileOutputStream fos = null;
 	private DataInputStream dis = null;
@@ -826,7 +827,7 @@ public class VolumeLevelCanvas extends Canvas implements IUNIT,
 	private boolean statusActiveThread = false;
 	private ArrayList<Integer> listStartTime = null;
 	private ArrayList<Integer> listVolLvl = null;
-	
+
 	private void writeStreamTempFile(ArrayList<Integer> srcData1,
 			ArrayList<Integer> srcData2, String desFilePath) {
 		// Check current status of copy thread
@@ -935,5 +936,5 @@ public class VolumeLevelCanvas extends Canvas implements IUNIT,
 			}
 		}
 	}
-	
+
 }
