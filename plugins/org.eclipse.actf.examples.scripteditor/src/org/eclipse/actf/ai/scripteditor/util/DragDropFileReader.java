@@ -87,7 +87,7 @@ public class DragDropFileReader {
 	// * Private method : Pre-Process for Load data
 	// *
 	private void preProcessLoadFile() {
-		scriptManager.clearData();
+		scriptManager.clear();
 		VolumeLevelCanvas.setVolumeLevelFilePath(null);
 	}
 

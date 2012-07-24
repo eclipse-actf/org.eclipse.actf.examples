@@ -13,8 +13,6 @@ package org.eclipse.actf.examples.scripteditor.actions;
 import org.eclipse.actf.ai.internal.ui.scripteditor.EditPanelTab;
 import org.eclipse.actf.ai.internal.ui.scripteditor.VolumeLevelCanvas;
 import org.eclipse.actf.ai.scripteditor.data.ScriptDataManager;
-import org.eclipse.actf.ai.scripteditor.data.event.DataEventManager;
-import org.eclipse.actf.ai.scripteditor.data.event.LabelEvent;
 import org.eclipse.actf.ai.scripteditor.reader.SAXReader;
 import org.eclipse.actf.ai.scripteditor.util.WebBrowserFactory;
 import org.eclipse.actf.ai.scripteditor.util.XMLFileMessageBox;
@@ -32,7 +30,6 @@ import org.eclipse.ui.IWorkbenchWindowActionDelegate;
 public class FileOpenAction implements IWorkbenchWindowActionDelegate {
 
 	private ScriptDataManager scriptManager = null;
-	private DataEventManager dataEventManager = null;
 	private EditPanelTab instEditPanelTab = null;
 	private TimeLineView instTimeLine = null;
 
@@ -56,19 +53,14 @@ public class FileOpenAction implements IWorkbenchWindowActionDelegate {
 		if (scriptManager == null) {
 			scriptManager = ScriptDataManager.getInstance();
 		}
-		if (dataEventManager == null) {
-			dataEventManager = DataEventManager.getInstance();
-		}
 	}
 
 	private void preProcess() {
 		VolumeLevelCanvas.setVolumeLevelFilePath(null);
-		scriptManager.clearData();
+		scriptManager.clear();
 	}
 
 	private void postProcess() {
-		dataEventManager.fireLabelEvent(new LabelEvent(
-				LabelEvent.PUT_ALL_LABEL, null, this));
 
 		if (instEditPanelTab != null) {
 			instEditPanelTab.initDispEditPanel();

@@ -14,9 +14,8 @@ import org.eclipse.actf.ai.internal.ui.scripteditor.EditPanelTab;
 import org.eclipse.actf.ai.internal.ui.scripteditor.SelectWAVFileTab;
 import org.eclipse.actf.ai.scripteditor.data.IScriptData;
 import org.eclipse.actf.ai.scripteditor.data.ScriptDataManager;
-import org.eclipse.actf.ai.scripteditor.data.event.DataEventManager;
-import org.eclipse.actf.ai.scripteditor.data.event.ScriptEvent;
-import org.eclipse.actf.ai.scripteditor.data.event.ScriptEventListener;
+import org.eclipse.actf.ai.scripteditor.data.event.ScriptDataEvent;
+import org.eclipse.actf.ai.scripteditor.data.event.ScriptDataEventListener;
 import org.eclipse.actf.ai.scripteditor.util.ScriptFileDropListener;
 import org.eclipse.actf.examples.scripteditor.Activator;
 import org.eclipse.swt.SWT;
@@ -37,7 +36,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.ViewPart;
 
-public class EditPanelView extends ViewPart implements ScriptEventListener {
+public class EditPanelView extends ViewPart implements ScriptDataEventListener {
 	public static final String VIEW_ID = "org.eclipse.actf.examples.scripteditor.EditPanelView";
 
 	static private EditPanelView ownInst = null;
@@ -52,7 +51,6 @@ public class EditPanelView extends ViewPart implements ScriptEventListener {
 	private CTabItem instEditPanelTabItem = null;
 	private CTabItem instSelectWAVFileTabItem = null;
 	//
-	private DataEventManager dataEventManager = null;
 	private ScriptDataManager scriptDataManager = ScriptDataManager
 			.getInstance();
 
@@ -62,7 +60,6 @@ public class EditPanelView extends ViewPart implements ScriptEventListener {
 	public EditPanelView() {
 		super();
 		ownInst = this;
-		dataEventManager = DataEventManager.getInstance();
 	}
 
 	static public EditPanelView getInstance() {
@@ -79,12 +76,11 @@ public class EditPanelView extends ViewPart implements ScriptEventListener {
 		// Add listener for load meta file
 		initDDListener(ownTabFolder);
 
-		scriptDataManager.addGuideListEventListener(ownInst);
+		scriptDataManager.addScriptDataEventListener(ownInst);
 		parent.addDisposeListener(new DisposeListener() {
 			@Override
 			public void widgetDisposed(DisposeEvent e) {
-				// TODO other components
-				scriptDataManager.removeGuideListEventListener(ownInst);
+				scriptDataManager.removeScriptDataEventListener(ownInst);
 			}
 		});
 	}
@@ -197,8 +193,9 @@ public class EditPanelView extends ViewPart implements ScriptEventListener {
 		}
 	}
 
-	public void handleScriptEvent(ScriptEvent e) {
-		if (e.getEventType() == ScriptEvent.SELECT_DATA) {
+	public void handleScriptEvent(ScriptDataEvent e) {
+		switch(e.getEventType()){
+		case ScriptDataEvent.SELECT:
 			IScriptData data = e.getData();
 			instEditPanelTab.setMultiSelectMode(false);
 			instEditPanelTab.repaintTextScriptData(data);
@@ -208,8 +205,18 @@ public class EditPanelView extends ViewPart implements ScriptEventListener {
 			} else {
 				ownTabFolder.setSelection(0);
 			}
-		} else if (e.getEventType() == ScriptEvent.DESELECT_DATA) {
-			instEditPanelTab.initDispEditPanel();
+			break;
+		case ScriptDataEvent.MULTIPLE_SELECT:
+			instEditPanelTab.setMultiSelectMode(true);
+			instEditPanelTab.setCurrentListData(e.getDataCollection());			
+			break;
+		case ScriptDataEvent.DESELECT:
+			//TODO confirm?
+			instEditPanelTab.initDispEditPanel();			
+			break;
+		case ScriptDataEvent.UPDATE:
+			
+			break;
 		}
 
 	}

@@ -18,16 +18,12 @@ import org.eclipse.actf.ai.internal.ui.scripteditor.EditPanelTab;
 import org.eclipse.actf.ai.internal.ui.scripteditor.Validator;
 import org.eclipse.actf.ai.internal.ui.scripteditor.VolumeLevelCanvas;
 import org.eclipse.actf.ai.internal.ui.scripteditor.WavInputDialog;
-import org.eclipse.actf.ai.internal.ui.scripteditor.event.EventManager;
-import org.eclipse.actf.ai.internal.ui.scripteditor.event.SyncTimeEvent;
 import org.eclipse.actf.ai.scripteditor.data.DataUtil;
 import org.eclipse.actf.ai.scripteditor.data.IScriptData;
 import org.eclipse.actf.ai.scripteditor.data.ScriptDataFactory;
 import org.eclipse.actf.ai.scripteditor.data.ScriptDataManager;
-import org.eclipse.actf.ai.scripteditor.data.event.DataEventManager;
-import org.eclipse.actf.ai.scripteditor.data.event.LabelEvent;
-import org.eclipse.actf.ai.scripteditor.data.event.ScriptEvent;
-import org.eclipse.actf.ai.scripteditor.data.event.ScriptEventListener;
+import org.eclipse.actf.ai.scripteditor.data.event.ScriptDataEvent;
+import org.eclipse.actf.ai.scripteditor.data.event.ScriptDataEventListener;
 import org.eclipse.actf.ai.scripteditor.util.VoicePlayerFactory;
 import org.eclipse.actf.ai.scripteditor.util.WebBrowserFactory;
 import org.eclipse.actf.ai.scripteditor.util.XMLFileMessageBox;
@@ -70,7 +66,7 @@ import org.eclipse.swt.widgets.TreeItem;
 /**
  * 
  */
-public class GuideListTree implements IUNIT, ScriptEventListener {
+public class GuideListTree implements IUNIT, ScriptDataEventListener {
 
 	private static GuideListTree ownInst = null;
 
@@ -99,26 +95,25 @@ public class GuideListTree implements IUNIT, ScriptEventListener {
 
 	boolean headerSelectFlag = false;
 
-	private EventManager eventManager = EventManager.getInstance();
-	private DataEventManager dataEventManager = DataEventManager.getInstance();
+	// private EventManager eventManager = EventManager.getInstance();
 
 	private ScriptSorter sorter = new ScriptSorter();
 
-	private class ColumnSelectionAdapter extends SelectionAdapter {
-		private int column;
-
-		public ColumnSelectionAdapter(int column) {
-			this.column = column;
-		}
-
-		public void widgetSelected(SelectionEvent arg0) {
-			treeViewer.setSelection(null);
-			if (sorter instanceof ScriptSorter) {
-				((ScriptSorter) sorter).setCurColumn(column);
-			}
-			treeViewer.refresh();
-		}
-	}
+	// private class ColumnSelectionAdapter extends SelectionAdapter {
+	// private int column;
+	//
+	// public ColumnSelectionAdapter(int column) {
+	// this.column = column;
+	// }
+	//
+	// public void widgetSelected(SelectionEvent arg0) {
+	// treeViewer.setSelection(null);
+	// if (sorter instanceof ScriptSorter) {
+	// ((ScriptSorter) sorter).setCurColumn(column);
+	// }
+	// treeViewer.refresh();
+	// }
+	// }
 
 	/**
 	 * Constructor
@@ -134,11 +129,10 @@ public class GuideListTree implements IUNIT, ScriptEventListener {
 		treeViewer.setComparator(new GuildListComparator());
 		treeViewer.setSorter(sorter);
 
-		scriptManager.addGuideListEventListener(ownInst);
+		scriptManager.addScriptDataEventListener(ownInst);
 		parentComposite.addDisposeListener(new DisposeListener() {
 			public void widgetDisposed(DisposeEvent e) {
-				// TODO other components
-				scriptManager.removeGuideListEventListener(ownInst);
+				scriptManager.removeScriptDataEventListener(ownInst);
 			}
 		});
 		initTable();
@@ -147,22 +141,6 @@ public class GuideListTree implements IUNIT, ScriptEventListener {
 	private void selectAllColumn(TreeColumn column, int style) {
 		instTree.setSortColumn(column);
 		instTree.setSortDirection(style);
-	}
-
-	private void selectGuideLineItemProcess(IScriptData paramData) {
-		IScriptData data = paramData;
-
-		TimeLineView timeLineView = TimeLineView.getInstance();
-		if (timeLineView != null
-				&& timeLineView.getStatusTimeLine() == TL_STAT_PAUSE) {
-			// Synchronize all TimeLine
-			eventManager.fireSyncTimeEvent(new SyncTimeEvent(
-					SyncTimeEvent.ADJUST_TIME_LINE, data.getStartTime(), this));
-		}
-		scriptManager.fireSelectDataEvent(data, this);
-
-		// Initialize sampling duration.
-		VolumeLevelCanvas.getInstance().clearSamplingLengthVolumeLevel();
 	}
 
 	private void initTable() {
@@ -259,255 +237,232 @@ public class GuideListTree implements IUNIT, ScriptEventListener {
 		// Speaker
 		characterComboCell = new ComboBoxCellEditorEx(instTree, scriptManager
 				.getCharacterList().toArray(new String[0]));
-		((CCombo) characterComboCell.getControl())
-				.addFocusListener(new FocusAdapter() {
-					String beforeCharacter = "";
-					IScriptData data = null;
+		characterComboCell.getControl().addFocusListener(new FocusAdapter() {
+			String beforeCharacter = "";
+			IScriptData data = null;
 
-					public void focusGained(FocusEvent e) {
-						TreeSelection selection = (TreeSelection) treeViewer
-								.getSelection();
-						data = (IScriptData) selection.getFirstElement();
+			public void focusGained(FocusEvent e) {
+				TreeSelection selection = (TreeSelection) treeViewer
+						.getSelection();
+				data = (IScriptData) selection.getFirstElement();
 
-						beforeCharacter = ((CCombo) (e.widget)).getText();
-						selectGuideLineItemProcess(data);
-						if (data.getType() == IScriptData.TYPE_AUDIO) {
-							Display.getCurrent().asyncExec(new Runnable() {
-								public void run() {
-									characterComboCell.deactivate();
-								}
-							});
-							return;
+				beforeCharacter = ((CCombo) (e.widget)).getText();
+				if (data.getType() == IScriptData.TYPE_AUDIO) {
+					Display.getCurrent().asyncExec(new Runnable() {
+						public void run() {
+							characterComboCell.deactivate();
 						}
-					}
+					});
+					return;
+				}
+			}
 
-					public void focusLost(FocusEvent e) {
-						String character = ((CCombo) (e.widget)).getText();
+			public void focusLost(FocusEvent e) {
+				String character = ((CCombo) (e.widget)).getText();
 
-						if (beforeCharacter.equals(character)) {
-							return;
-						}
-
-						data.setCharacter(character);
-						data.setDataCommit(true);
-						scriptManager.fireUpdateDataEvent(data, this);
-					}
-				});
+				if (beforeCharacter.equals(character)) {
+					return;
+				}
+				data.setCharacter(character);
+				data.setDataCommit(true);
+				scriptManager.fireDataUpdateEvent(data, this);
+			}
+		});
 
 		// Scenario
 		final TextCellEditorEx scenarioTextCell = new TextCellEditorEx(instTree);
-		((Text) scenarioTextCell.getControl())
-				.addFocusListener(new FocusAdapter() {
-					String beforeScenario = "";
-					IScriptData data = null;
+		scenarioTextCell.getControl().addFocusListener(new FocusAdapter() {
+			String beforeScenario = "";
+			IScriptData data = null;
 
-					public void focusGained(FocusEvent e) {
-						TreeSelection selection = (TreeSelection) treeViewer
-								.getSelection();
-						data = (IScriptData) selection.getFirstElement();
-						selectGuideLineItemProcess(data);
+			public void focusGained(FocusEvent e) {
+				TreeSelection selection = (TreeSelection) treeViewer
+						.getSelection();
+				data = (IScriptData) selection.getFirstElement();
 
-						if (data.getType() != IScriptData.TYPE_SCENARIO) {
-							Display.getCurrent().asyncExec(new Runnable() {
-								public void run() {
-									scenarioTextCell.deactivate();
-								}
-							});
-							return;
+				if (data.getType() != IScriptData.TYPE_SCENARIO) {
+					Display.getCurrent().asyncExec(new Runnable() {
+						public void run() {
+							scenarioTextCell.deactivate();
 						}
-						beforeScenario = ((Text) (e.widget)).getText();
-					}
+					});
+					return;
+				}
+				beforeScenario = ((Text) (e.widget)).getText();
+			}
 
-					public void focusLost(FocusEvent e) {
-						String scenario = ((Text) (e.widget)).getText();
-						if (beforeScenario.equals(scenario)) {
-							return;
-						}
-						data.setScenario(scenario);
-						data.setDataCommit(true);
-						scriptManager.fireUpdateDataEvent(data, this);
+			public void focusLost(FocusEvent e) {
+				String scenario = ((Text) (e.widget)).getText();
+				if (beforeScenario.equals(scenario)) {
+					return;
+				}
+				data.setScenario(scenario);
+				data.setDataCommit(true);
+				scriptManager.fireDataUpdateEvent(data, this);
 
-					}
-				});
+			}
+		});
 
 		// Description
 		final TextCellEditorEx descriptionTextCell = new TextCellEditorEx(
 				instTree);
-		((Text) descriptionTextCell.getControl())
-				.addFocusListener(new FocusAdapter() {
-					String beforeDescription = "";
-					IScriptData data = null;
+		descriptionTextCell.getControl().addFocusListener(new FocusAdapter() {
+			String beforeDescription = "";
+			IScriptData data = null;
 
-					public void focusGained(FocusEvent e) {
-						Display.getCurrent().asyncExec(new Runnable() {
-							public void run() {
-								descriptionTextCell.activate();
-							}
-						});
-						TreeSelection selection = (TreeSelection) treeViewer
-								.getSelection();
-						data = (IScriptData) selection.getFirstElement();
-						beforeDescription = ((Text) (e.widget)).getText();
-
-						selectGuideLineItemProcess(data);
-
-						if (data.getType() != IScriptData.TYPE_AUDIO
-								&& !(data.getType() == IScriptData.TYPE_SCENARIO && data
-										.isDataCommit() == false)) {
-							Display.getCurrent().asyncExec(new Runnable() {
-								public void run() {
-									descriptionTextCell.deactivate();
-								}
-							});
-							return;
-						}
-					}
-
-					public void focusLost(FocusEvent e) {
-						String description = ((Text) (e.widget)).getText();
-						if (beforeDescription.equals(description)) {
-							return;
-						}
-						dataEventManager.fireLabelEvent(new LabelEvent(
-								LabelEvent.DELETE_LABEL, data, this));
-						scriptManager.remove(data);
-
-						data.setType(IScriptData.TYPE_AUDIO);
-						data.setMark(NO_MARK);
-						data.setDescription(description);
-
-						int newEndTime;
-						int length = VoicePlayerFactory.getInstance()
-								.getSpeakLength(data);
-						if (length > 0) {
-							newEndTime = data.getStartTime() + length;
-							data.setEndTimeAccurate(true);
-						} else {
-							newEndTime = data.getStartTime()
-									+ DataUtil.sumMoraCount(
-											data.getDescription(),
-											data.getLang());
-							data.setEndTimeAccurate(false);
-						}
-
-						data.setEndTime(newEndTime);
-						data.setDataCommit(true);
-
-						scriptManager.add(data);
-						dataEventManager.fireLabelEvent(new LabelEvent(
-								LabelEvent.PUT_LABEL, data, this));
-
+			public void focusGained(FocusEvent e) {
+				Display.getCurrent().asyncExec(new Runnable() {
+					public void run() {
+						descriptionTextCell.activate();
 					}
 				});
+				TreeSelection selection = (TreeSelection) treeViewer
+						.getSelection();
+				data = (IScriptData) selection.getFirstElement();
+				beforeDescription = ((Text) (e.widget)).getText();
+
+				if (data.getType() != IScriptData.TYPE_AUDIO
+						&& !(data.getType() == IScriptData.TYPE_SCENARIO && data
+								.isDataCommit() == false)) {
+					Display.getCurrent().asyncExec(new Runnable() {
+						public void run() {
+							descriptionTextCell.deactivate();
+						}
+					});
+					return;
+				}
+			}
+
+			public void focusLost(FocusEvent e) {
+				String description = ((Text) (e.widget)).getText();
+				if (beforeDescription.equals(description)) {
+					return;
+				}
+				scriptManager.remove(data);
+
+				data.setType(IScriptData.TYPE_AUDIO);
+				data.setMark(NO_MARK);
+				data.setDescription(description);
+
+				int newEndTime;
+				int length = VoicePlayerFactory.getInstance().getSpeakLength(
+						data);
+				if (length > 0) {
+					newEndTime = data.getStartTime() + length;
+					data.setEndTimeAccurate(true);
+				} else {
+					newEndTime = data.getStartTime()
+							+ DataUtil.sumMoraCount(data.getDescription(),
+									data.getLang());
+					data.setEndTimeAccurate(false);
+				}
+
+				data.setEndTime(newEndTime);
+				data.setDataCommit(true);
+
+				scriptManager.add(data);
+			}
+		});
 
 		//
 		// Caption
 		// -------------------------------------------------------------------------------
 		//
 		final TextCellEditorEx captionTextCell = new TextCellEditorEx(instTree);
-		((Text) captionTextCell.getControl())
-				.addFocusListener(new FocusAdapter() {
-					String beforeCaption = "";
-					IScriptData data = null;
-					TreeItem[] item;
+		captionTextCell.getControl().addFocusListener(new FocusAdapter() {
+			String beforeCaption = "";
+			IScriptData data = null;
 
-					public void focusGained(FocusEvent e) {
-						TreeSelection selection = (TreeSelection) treeViewer
-								.getSelection();
-						data = (IScriptData) selection.getFirstElement();
-						item = instTree.getSelection();
-						beforeCaption = ((Text) (e.widget)).getText();
+			// TreeItem[] item;
 
-						selectGuideLineItemProcess(data);
+			public void focusGained(FocusEvent e) {
+				TreeSelection selection = (TreeSelection) treeViewer
+						.getSelection();
+				data = (IScriptData) selection.getFirstElement();
+				// item = instTree.getSelection();
+				beforeCaption = ((Text) (e.widget)).getText();
 
-						if (data.getType() != IScriptData.TYPE_CAPTION
-								&& !(data.getType() == IScriptData.TYPE_SCENARIO && data
-										.isDataCommit() == false)) {
-							Display.getCurrent().asyncExec(new Runnable() {
-								public void run() {
-									captionTextCell.deactivate();
-								}
-							});
-							return;
+				if (data.getType() != IScriptData.TYPE_CAPTION
+						&& !(data.getType() == IScriptData.TYPE_SCENARIO && data
+								.isDataCommit() == false)) {
+					Display.getCurrent().asyncExec(new Runnable() {
+						public void run() {
+							captionTextCell.deactivate();
 						}
-					}
+					});
+					return;
+				}
+			}
 
-					public void focusLost(FocusEvent e) {
-						String caption = ((Text) (e.widget)).getText();
-						if (beforeCaption.equals(caption)) {
-							return;
-						}
+			public void focusLost(FocusEvent e) {
+				String caption = ((Text) (e.widget)).getText();
+				if (beforeCaption.equals(caption)) {
+					return;
+				}
 
-						dataEventManager.fireLabelEvent(new LabelEvent(
-								LabelEvent.DELETE_LABEL, data, this));
-						scriptManager.remove(data);
+				scriptManager.remove(data);
 
-						data.setType(IScriptData.TYPE_CAPTION);
-						data.setMark(NO_MARK);
-						data.setCaption(caption);
-						if (data.getEndTime() <= data.getStartTime()) {
-							// TODO need input from user
-							int endTime = DataUtil.sumMoraCount(
-									data.getCaption(), data.getLang());
-							data.setEndTime(data.getStartTime() + endTime);
-						}
+				data.setType(IScriptData.TYPE_CAPTION);
+				data.setMark(NO_MARK);
+				data.setCaption(caption);
+				if (data.getEndTime() <= data.getStartTime()) {
+					// TODO need input from user
+					int endTime = DataUtil.sumMoraCount(data.getCaption(),
+							data.getLang());
+					data.setEndTime(data.getStartTime() + endTime);
+				}
 
-						data.setDataCommit(true);
+				data.setDataCommit(true);
 
-						scriptManager.add(data);
-						dataEventManager.fireLabelEvent(new LabelEvent(
-								LabelEvent.PUT_LABEL, data, this));
+				scriptManager.add(data);
 
-					}
-				});
+			}
+		});
 		//
 		// Extended
 		// -------------------------------------------------------------------------------
 		//
 		final ComboBoxCellEditor extendsComboCell = new ComboBoxCellEditor(
 				instTree, new String[] { "Extended", "Normal" });
-		((CCombo) extendsComboCell.getControl())
-				.addFocusListener(new FocusAdapter() {
-					String beforeExtends = "";
-					IScriptData data = null;
+		extendsComboCell.getControl().addFocusListener(new FocusAdapter() {
+			String beforeExtends = "";
+			IScriptData data = null;
 
-					public void focusGained(FocusEvent e) {
-						TreeSelection selection = (TreeSelection) treeViewer
-								.getSelection();
-						data = (IScriptData) selection.getFirstElement();
+			public void focusGained(FocusEvent e) {
+				TreeSelection selection = (TreeSelection) treeViewer
+						.getSelection();
+				data = (IScriptData) selection.getFirstElement();
 
-						beforeExtends = ((CCombo) (e.widget)).getText();
-						selectGuideLineItemProcess(data);
-						if (data.getType() != IScriptData.TYPE_AUDIO) {
-							Display.getCurrent().asyncExec(new Runnable() {
-								public void run() {
-									extendsComboCell.deactivate();
-								}
-							});
-							return;
+				beforeExtends = ((CCombo) (e.widget)).getText();
+				if (data.getType() != IScriptData.TYPE_AUDIO) {
+					Display.getCurrent().asyncExec(new Runnable() {
+						public void run() {
+							extendsComboCell.deactivate();
 						}
-					}
+					});
+					return;
+				}
+			}
 
-					public void focusLost(FocusEvent e) {
-						String extended = ((CCombo) (e.widget)).getText();
-						if (beforeExtends.equals(extended)) {
-							return;
-						}
+			public void focusLost(FocusEvent e) {
+				String extended = ((CCombo) (e.widget)).getText();
+				if (beforeExtends.equals(extended)) {
+					return;
+				}
 
-						if (data.getType() == IScriptData.TYPE_AUDIO) {
-							data.setExtended("Extended".equals(extended));
-							dataEventManager.fireLabelEvent(new LabelEvent(
-									LabelEvent.PUT_LABEL, data, this));
-						}
-					}
-				});
+				if (data.getType() == IScriptData.TYPE_AUDIO) {
+					data.setExtended("Extended".equals(extended));
+					scriptManager.fireDataUpdateEvent(data, this);
+				}
+			}
+		});
 
 		//
 		// Wav
 		// -------------------------------------------------------------------------------
 		//
 		final TextCellEditorEx wavTextCell = new TextCellEditorEx(instTree);
-		((Text) wavTextCell.getControl()).addFocusListener(new FocusAdapter() {
+		wavTextCell.getControl().addFocusListener(new FocusAdapter() {
 			public void focusGained(FocusEvent e) {
 				Display.getCurrent().asyncExec(new Runnable() {
 					public void run() {
@@ -521,7 +476,6 @@ public class GuideListTree implements IUNIT, ScriptEventListener {
 							.getSelection();
 					final IScriptData data = (IScriptData) selection
 							.getFirstElement();
-					selectGuideLineItemProcess(data);
 					if (data.getType() != IScriptData.TYPE_AUDIO) {
 						return;
 					}
@@ -545,33 +499,13 @@ public class GuideListTree implements IUNIT, ScriptEventListener {
 										.getStartTimeString())) {
 
 									scriptManager.remove(data);
-
-									dataEventManager
-											.fireLabelEvent(new LabelEvent(
-													LabelEvent.DELETE_LABEL,
-													data, this));
 									data.setDataCommit(true);
-
 									scriptManager.add(data);
-
-									dataEventManager
-											.fireLabelEvent(new LabelEvent(
-													LabelEvent.PUT_LABEL, data,
-													this));
-
 								}
 
 							} else if (dialog.getReturnCode() == WavInputDialog.DELETE) {
 								scriptManager.remove(data);
-
-								dataEventManager.fireLabelEvent(new LabelEvent(
-										LabelEvent.DELETE_LABEL, data, this));
-
 								scriptManager.add(data);
-
-								dataEventManager.fireLabelEvent(new LabelEvent(
-										LabelEvent.PUT_LABEL, data, this));
-
 							}
 						}
 					});
@@ -592,30 +526,28 @@ public class GuideListTree implements IUNIT, ScriptEventListener {
 		// -------------------------------------------------------------------------------
 		//
 		TextCellEditorEx commentTextCell = new TextCellEditorEx(instTree);
-		((Text) commentTextCell.getControl())
-				.addFocusListener(new FocusAdapter() {
-					String beforeComment = "";
-					IScriptData data = null;
+		commentTextCell.getControl().addFocusListener(new FocusAdapter() {
+			String beforeComment = "";
+			IScriptData data = null;
 
-					public void focusGained(FocusEvent e) {
-						TreeSelection selection = (TreeSelection) treeViewer
-								.getSelection();
-						data = (IScriptData) selection.getFirstElement();
+			public void focusGained(FocusEvent e) {
+				TreeSelection selection = (TreeSelection) treeViewer
+						.getSelection();
+				data = (IScriptData) selection.getFirstElement();
 
-						beforeComment = ((Text) (e.widget)).getText();
-						selectGuideLineItemProcess(data);
-					}
+				beforeComment = ((Text) (e.widget)).getText();
+			}
 
-					public void focusLost(FocusEvent e) {
-						String comment = ((Text) (e.widget)).getText();
-						if (beforeComment.equals(comment)) {
-							return;
-						}
-						data.setScriptComment(comment);
-						scriptManager.fireUpdateDataEvent(data, this);
-						DataUtil.debug();
-					}
-				});
+			public void focusLost(FocusEvent e) {
+				String comment = ((Text) (e.widget)).getText();
+				if (beforeComment.equals(comment)) {
+					return;
+				}
+				data.setScriptComment(comment);
+				scriptManager.fireDataUpdateEvent(data, this);
+				DataUtil.debug();
+			}
+		});
 
 		CellEditor[] editors = new CellEditor[] { new TextCellEditor(instTree),
 				new TextCellEditor(instTree), startTimeTextCell,
@@ -778,8 +710,6 @@ public class GuideListTree implements IUNIT, ScriptEventListener {
 			}
 		}
 		scriptManager.addAll(list);
-		dataEventManager.fireLabelEvent(new LabelEvent(
-				LabelEvent.PUT_ALL_LABEL, null, this));
 	}
 
 	class DeleteAction extends Action implements IUNIT {
@@ -801,9 +731,6 @@ public class GuideListTree implements IUNIT, ScriptEventListener {
 
 						IScriptData data = (IScriptData) items[i].getData();
 						scriptManager.remove(data);
-						dataEventManager.fireLabelEvent(new LabelEvent(
-								LabelEvent.DELETE_LABEL, data, this));
-
 					}
 				}
 			});
@@ -885,48 +812,51 @@ public class GuideListTree implements IUNIT, ScriptEventListener {
 			List<IScriptData> list = sel.toList();
 
 			// Exist ScriptData?
-			if (list.size() == 1) {
+			if (list.size() > 0) {
 				selectAllColumn(column2, SWT.NONE);
-			} else if (list.size() > 1) {
-				selectAllColumn(column2, SWT.NONE);
-				if (EditPanelTab.getInstance() != null) {
-					EditPanelTab.getInstance().setMultiSelectMode(true);
-					EditPanelTab.getInstance().setCurrentListData(list);
-				}
 			} else {
 				return;
 			}
-			if (isUser && e.getSource() != this) {
-				int newPosition = list.iterator().next().getStartTime() - 10;
-				if (newPosition < 0) {
-					newPosition = 0;
+			if (isUser) {
+
+				IScriptData data = list.get(0);
+
+				// TODO use event
+				WebBrowserFactory.getInstance().setCurrentPosition(
+						data.getStartTime());
+
+				if (list.size() == 1) {
+					scriptManager.fireDataSelectionEvent(data, ownInst);
+				} else {
+					scriptManager.fireMultipleDataSelectionEvent(list, ownInst);
 				}
-				WebBrowserFactory.getInstance().pauseMedia();
-				WebBrowserFactory.getInstance().setCurrentPosition(newPosition);
 			}
 		}
 	}
 
-	public void handleScriptEvent(ScriptEvent e) {
+	public void handleScriptEvent(ScriptDataEvent e) {
 		switch (e.getEventType()) {
-		case ScriptEvent.SELECT_DATA:
-		case ScriptEvent.PLAY_DATA:
+		case ScriptDataEvent.SELECT:
+			if (e.getSource() == ownInst) {
+				break;
+			}
+		case ScriptDataEvent.PLAY:
 			isUser = false;
 			IScriptData data = e.getData();
 			treeViewer.setSelection(new StructuredSelection(data), true);
 			isUser = true;
 			break;
-		case ScriptEvent.DESELECT_DATA:
+		case ScriptDataEvent.DESELECT:
 			treeViewer.setSelection(null, false);
 			break;
-		case ScriptEvent.ADD_DATA:
-		case ScriptEvent.ADD_MULTIPUL_DATA:
-		case ScriptEvent.UPDATE_DATA:
-		case ScriptEvent.UPDATE_MULTIPUL_DATA:
-		case ScriptEvent.DELETE_DATA:
+		case ScriptDataEvent.ADD:
+		case ScriptDataEvent.MULTIPLE_ADD:
+		case ScriptDataEvent.UPDATE:
+		case ScriptDataEvent.MULTIPLE_UPDATE:
+		case ScriptDataEvent.DELETE:
 			updateLine();
 			break;
-		case ScriptEvent.CLEAR_DATA:
+		case ScriptDataEvent.CLEAR:
 			treeViewer.getTree().removeAll();
 			break;
 		}

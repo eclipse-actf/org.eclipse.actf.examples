@@ -27,8 +27,6 @@ import org.eclipse.actf.ai.internal.ui.scripteditor.event.TimerEvent;
 import org.eclipse.actf.ai.internal.ui.scripteditor.event.TimerEventListener;
 import org.eclipse.actf.ai.scripteditor.data.IScriptData;
 import org.eclipse.actf.ai.scripteditor.data.ScriptDataManager;
-import org.eclipse.actf.ai.scripteditor.data.event.DataEventManager;
-import org.eclipse.actf.ai.scripteditor.data.event.LabelEvent;
 import org.eclipse.actf.ai.scripteditor.util.ScriptFileDropListener;
 import org.eclipse.actf.ai.scripteditor.util.SoundMixer;
 import org.eclipse.actf.ai.scripteditor.util.VoicePlayerFactory;
@@ -123,9 +121,8 @@ public class TimeLineView extends ViewPart implements IUNIT,
 	private boolean currentDragStatus = false; // status for dragging
 
 	// for Event Managing
-	private static EventManager eventManager = null;
-	private ScriptDataManager scriptManager = null;
-	private DataEventManager dataEventManager = null;
+	private static EventManager eventManager = EventManager.getInstance();
+	private ScriptDataManager scriptManager = ScriptDataManager.getInstance();
 
 	private int captionStartTimeLine = 0;
 
@@ -142,10 +139,6 @@ public class TimeLineView extends ViewPart implements IUNIT,
 				new ScriptEditorShutdownListener());
 
 		ownInst = this;
-
-		eventManager = EventManager.getInstance();
-		scriptManager = ScriptDataManager.getInstance();
-		dataEventManager = DataEventManager.getInstance();
 	}
 
 	static public TimeLineView getInstance() {
@@ -176,7 +169,6 @@ public class TimeLineView extends ViewPart implements IUNIT,
 		parent.addDisposeListener(new DisposeListener() {
 			@Override
 			public void widgetDisposed(DisposeEvent e) {
-				// TODO other components
 				eventManager.removeSyncTimeEventListener(ownInst);
 				eventManager.removeMouseDragEventListener(ownInst);
 				eventManager.removeTimerEventListener(ownInst);
@@ -1098,9 +1090,7 @@ public class TimeLineView extends ViewPart implements IUNIT,
 				data.setEndTime(newEndTime);
 			}
 			// replace label and data.
-			dataEventManager.fireLabelEvent(new LabelEvent(
-					LabelEvent.PUT_LABEL, data, this));
-			scriptManager.fireUpdateDataEvent(data, this);
+			scriptManager.fireDataUpdateEvent(data, this);
 
 		}
 	}
@@ -1593,7 +1583,8 @@ public class TimeLineView extends ViewPart implements IUNIT,
 									currentScriptDataIndex = -1;
 
 									// Finish high-light for target
-									scriptManager.fireDeselectDataEvent(this);
+									scriptManager
+											.fireDataDeselectionEvent(this);
 								}
 							} else {
 								// increment duration counter

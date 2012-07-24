@@ -17,8 +17,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.TreeSet;
 
-import org.eclipse.actf.ai.scripteditor.data.event.ScriptEvent;
-import org.eclipse.actf.ai.scripteditor.data.event.ScriptEventListener;
+import org.eclipse.actf.ai.scripteditor.data.event.ScriptDataEvent;
+import org.eclipse.actf.ai.scripteditor.data.event.ScriptDataEventListener;
 import org.eclipse.actf.ai.scripteditor.util.TimeFormatUtil;
 import org.eclipse.actf.ai.scripteditor.util.XMLFileMessageBox;
 import org.eclipse.actf.util.FileUtils;
@@ -29,7 +29,7 @@ import org.eclipse.actf.util.FileUtils;
  */
 public class ScriptDataManager {
 
-	private static List<ScriptEventListener> SCRIPT_EVENT_LISTENERS = new ArrayList<ScriptEventListener>();
+	private static List<ScriptDataEventListener> SCRIPT_EVENT_LISTENERS = new ArrayList<ScriptDataEventListener>();
 
 	public class scriptDataComparator implements Comparator<IScriptData> {
 
@@ -94,10 +94,10 @@ public class ScriptDataManager {
 		return (ownInst);
 	}
 
-	public synchronized void clearData() {
+	public synchronized void clear() {
 		iData.clear();
 		cData.clear();
-		fireScriptEvent(new ScriptEvent(ScriptEvent.CLEAR_DATA, this));
+		fireScriptEvent(new ScriptDataEvent(ScriptDataEvent.CLEAR, this));
 	}
 
 	@Deprecated
@@ -152,7 +152,7 @@ public class ScriptDataManager {
 			cData.add(tmpCharacter);
 		}
 		if (iData.add(data)) {
-			fireScriptEvent(ScriptEvent.ADD_DATA, data, this);
+			fireScriptEvent(ScriptDataEvent.ADD, data, this);
 			return true;
 		}
 		return false;
@@ -166,7 +166,7 @@ public class ScriptDataManager {
 			}
 		}
 		if (iData.addAll(data)) {
-			fireScriptEvent(new ScriptEvent(ScriptEvent.ADD_MULTIPUL_DATA,
+			fireScriptEvent(new ScriptDataEvent(ScriptDataEvent.MULTIPLE_ADD,
 					data, this));
 			return true;
 		}
@@ -179,7 +179,7 @@ public class ScriptDataManager {
 
 	public synchronized boolean remove(IScriptData data) {
 		if (iData.remove(data)) {
-			fireScriptEvent(ScriptEvent.DELETE_DATA, data, this);
+			fireScriptEvent(ScriptDataEvent.DELETE, data, this);
 			return true;
 		}
 		return false;
@@ -501,7 +501,7 @@ public class ScriptDataManager {
 	 * 
 	 * @param listener
 	 */
-	public void addGuideListEventListener(ScriptEventListener listener) {
+	public void addScriptDataEventListener(ScriptDataEventListener listener) {
 		SCRIPT_EVENT_LISTENERS.add(listener);
 	}
 
@@ -510,37 +510,43 @@ public class ScriptDataManager {
 	 * 
 	 * @param listener
 	 */
-	public void removeGuideListEventListener(ScriptEventListener listener) {
+	public void removeScriptDataEventListener(ScriptDataEventListener listener) {
 		SCRIPT_EVENT_LISTENERS.remove(listener);
 	}
 
-	public void fireSelectDataEvent(IScriptData selectedData, Object source) {
-		fireScriptEvent(ScriptEvent.SELECT_DATA, selectedData, source);
+	public void fireDataSelectionEvent(IScriptData selectedData, Object source) {
+		fireScriptEvent(ScriptDataEvent.SELECT, selectedData, source);
 	}
 
-	public void fireDeselectDataEvent(Object source) {
-		fireScriptEvent(new ScriptEvent(ScriptEvent.DESELECT_DATA, source));
+	public void fireMultipleDataSelectionEvent(
+			Collection<IScriptData> selection, Object source) {
+		fireScriptEvent(new ScriptDataEvent(ScriptDataEvent.MULTIPLE_SELECT,
+				selection, source));
 	}
 
-	public void fireUpdateDataEvent(IScriptData updatedData, Object source) {
-		fireScriptEvent(ScriptEvent.UPDATE_DATA, updatedData, source);
+	public void fireDataDeselectionEvent(Object source) {
+		fireScriptEvent(new ScriptDataEvent(ScriptDataEvent.DESELECT, source));
 	}
 
-	public void fireUpdateMultipleDataEvent(
+	public void fireDataUpdateEvent(IScriptData updatedData, Object source) {
+		fireScriptEvent(ScriptDataEvent.UPDATE, updatedData, source);
+	}
+
+	public void fireMultipleDataUpdateEvent(
 			Collection<IScriptData> updatedData, Object source) {
 		if (updatedData != null) {
-			fireScriptEvent(new ScriptEvent(ScriptEvent.UPDATE_MULTIPUL_DATA,
-					updatedData, source));
+			fireScriptEvent(new ScriptDataEvent(
+					ScriptDataEvent.MULTIPLE_UPDATE, updatedData, source));
 		}
 	}
 
 	public void firePlayEvent(IScriptData playingData, Object source) {
-		fireScriptEvent(ScriptEvent.PLAY_DATA, playingData, source);
+		fireScriptEvent(ScriptDataEvent.PLAY, playingData, source);
 	}
 
 	private void fireScriptEvent(int type, IScriptData data, Object source) {
 		if (data != null) {
-			fireScriptEvent(new ScriptEvent(type, data, source));
+			fireScriptEvent(new ScriptDataEvent(type, data, source));
 		}
 	}
 
@@ -549,8 +555,8 @@ public class ScriptDataManager {
 	 * 
 	 * @param event
 	 */
-	private void fireScriptEvent(ScriptEvent event) {
-		for (ScriptEventListener listener : SCRIPT_EVENT_LISTENERS) {
+	private void fireScriptEvent(ScriptDataEvent event) {
+		for (ScriptDataEventListener listener : SCRIPT_EVENT_LISTENERS) {
 			listener.handleScriptEvent(event);
 		}
 	}

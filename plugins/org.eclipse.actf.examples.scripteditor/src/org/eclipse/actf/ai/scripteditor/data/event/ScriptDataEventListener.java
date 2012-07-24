@@ -12,6 +12,6 @@ package org.eclipse.actf.ai.scripteditor.data.event;
 
 import java.util.EventListener;
 
-public interface ScriptEventListener extends EventListener {
-	public abstract void handleScriptEvent(ScriptEvent e);
+public interface ScriptDataEventListener extends EventListener {
+	public abstract void handleScriptEvent(ScriptDataEvent e);
 }

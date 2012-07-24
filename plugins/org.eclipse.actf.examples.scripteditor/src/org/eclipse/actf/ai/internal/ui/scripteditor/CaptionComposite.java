@@ -21,11 +21,8 @@ import org.eclipse.actf.ai.internal.ui.scripteditor.event.SyncTimeEventListener;
 import org.eclipse.actf.ai.scripteditor.data.DataUtil;
 import org.eclipse.actf.ai.scripteditor.data.IScriptData;
 import org.eclipse.actf.ai.scripteditor.data.ScriptDataManager;
-import org.eclipse.actf.ai.scripteditor.data.event.DataEventManager;
-import org.eclipse.actf.ai.scripteditor.data.event.LabelEvent;
-import org.eclipse.actf.ai.scripteditor.data.event.LabelEventListener;
-import org.eclipse.actf.ai.scripteditor.data.event.ScriptEvent;
-import org.eclipse.actf.ai.scripteditor.data.event.ScriptEventListener;
+import org.eclipse.actf.ai.scripteditor.data.event.ScriptDataEvent;
+import org.eclipse.actf.ai.scripteditor.data.event.ScriptDataEventListener;
 import org.eclipse.actf.ai.ui.scripteditor.views.IUNIT;
 import org.eclipse.actf.ai.ui.scripteditor.views.TimeLineView;
 import org.eclipse.actf.examples.scripteditor.Activator;
@@ -49,7 +46,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 
 public class CaptionComposite extends Composite implements IUNIT,
-		SyncTimeEventListener, LabelEventListener, ScriptEventListener {
+		SyncTimeEventListener, ScriptDataEventListener {
 
 	// instance of own class
 	static private CaptionComposite ownInst = null;
@@ -81,7 +78,6 @@ public class CaptionComposite extends Composite implements IUNIT,
 	private boolean currentDragStatus = false;
 
 	private static EventManager eventManager = null;
-	private static DataEventManager dataEventManager = null;
 	protected ScriptDataManager scriptManager = null;
 
 	protected Label selectLabel = null;
@@ -110,12 +106,11 @@ public class CaptionComposite extends Composite implements IUNIT,
 		scriptManager = ScriptDataManager.getInstance();
 		eventManager = EventManager.getInstance();
 		eventManager.addSyncTimeEventListener(ownInst);
-		dataEventManager = DataEventManager.getInstance();
-		dataEventManager.addLabelEventListener(ownInst);
+		scriptManager.addScriptDataEventListener(ownInst);
 		parent.addDisposeListener(new DisposeListener() {
 			public void widgetDisposed(DisposeEvent e) {
 				eventManager.removeSyncTimeEventListener(ownInst);
-				dataEventManager.removeLabelEventListener(ownInst);
+				scriptManager.removeScriptDataEventListener(ownInst);
 			}
 		});
 
@@ -882,7 +877,7 @@ public class CaptionComposite extends Composite implements IUNIT,
 
 				if (e.widget instanceof Label) {
 					selectLabel = (Label) e.widget;
-					scriptManager.fireSelectDataEvent(data, this);
+					scriptManager.fireDataSelectionEvent(data, this);
 				}
 				currentDragStatus = false;
 			} else if (!execDataConvMouseDragged && statusMouseDragged
@@ -992,42 +987,39 @@ public class CaptionComposite extends Composite implements IUNIT,
 		}
 	}
 
-	public void handleLabelEvent(LabelEvent e) {
+	@Override
+	public void handleScriptEvent(ScriptDataEvent e) {
 		switch (e.getEventType()) {
-		case LabelEvent.PUT_ALL_LABEL:
+		case ScriptDataEvent.CLEAR:
 			clearLabel();
-			createAllLabel(IScriptData.TYPE_CAPTION);
 			break;
-		case LabelEvent.PUT_LABEL:
+		case ScriptDataEvent.ADD:
 			if (e.getData().getType() != IScriptData.TYPE_CAPTION) {
 				return;
 			}
 			putLabel(e.getData());
 			break;
-		case LabelEvent.DELETE_LABEL:
+		case ScriptDataEvent.MULTIPLE_ADD:
+			//TODO check size of e.getDataCollection()			
+			clearLabel();
+			createAllLabel(IScriptData.TYPE_CAPTION);
+			break;
+		case ScriptDataEvent.DELETE:
 			if (e.getData().getType() != IScriptData.TYPE_CAPTION) {
 				return;
 			}
 			deleteLabel(e.getData());
 			break;
-		}
-	}
-
-	@Override
-	public void handleScriptEvent(ScriptEvent e) {
-		switch (e.getEventType()) {
-		case ScriptEvent.CLEAR_DATA:
+		case ScriptDataEvent.UPDATE:
+			if (e.getData().getType() != IScriptData.TYPE_CAPTION) {
+				return;
+			}
+			putLabel(e.getData()); //TODO update mode
+			break;
+		case ScriptDataEvent.MULTIPLE_UPDATE:
+			//TODO check size of e.getDataCollection()			
 			clearLabel();
-			break;
-		case ScriptEvent.ADD_DATA:
-			break;
-		case ScriptEvent.ADD_MULTIPUL_DATA:
-			break;
-		case ScriptEvent.DELETE_DATA:
-			break;
-		case ScriptEvent.UPDATE_DATA:
-			break;
-		case ScriptEvent.UPDATE_MULTIPUL_DATA:
+			createAllLabel(IScriptData.TYPE_CAPTION);
 			break;
 		}
 	}

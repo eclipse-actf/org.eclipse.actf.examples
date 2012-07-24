@@ -21,11 +21,9 @@ import org.eclipse.actf.ai.internal.ui.scripteditor.event.SyncTimeEventListener;
 import org.eclipse.actf.ai.scripteditor.data.DataUtil;
 import org.eclipse.actf.ai.scripteditor.data.IScriptData;
 import org.eclipse.actf.ai.scripteditor.data.ScriptDataManager;
-import org.eclipse.actf.ai.scripteditor.data.event.DataEventManager;
-import org.eclipse.actf.ai.scripteditor.data.event.LabelEvent;
-import org.eclipse.actf.ai.scripteditor.data.event.LabelEventListener;
-import org.eclipse.actf.ai.scripteditor.data.event.ScriptEvent;
-import org.eclipse.actf.ai.scripteditor.data.event.ScriptEventListener;
+import org.eclipse.actf.ai.scripteditor.data.event.ScriptDataEvent;
+import org.eclipse.actf.ai.scripteditor.data.event.ScriptDataEventListener;
+import org.eclipse.actf.ai.scripteditor.util.WebBrowserFactory;
 import org.eclipse.actf.ai.ui.scripteditor.views.IUNIT;
 import org.eclipse.actf.ai.ui.scripteditor.views.TimeLineView;
 import org.eclipse.actf.examples.scripteditor.Activator;
@@ -49,7 +47,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 
 public class AudioComposite extends Composite implements IUNIT,
-		SyncTimeEventListener, LabelEventListener, ScriptEventListener {
+		SyncTimeEventListener, ScriptDataEventListener {
 
 	static private AudioComposite ownInst = null;
 
@@ -85,8 +83,6 @@ public class AudioComposite extends Composite implements IUNIT,
 
 	protected static EventManager eventManager = EventManager.getInstance();
 	protected ScriptDataManager scriptManager = ScriptDataManager.getInstance();
-	protected DataEventManager dataEventManager = DataEventManager
-			.getInstance();
 
 	protected Label selectLabel = null;
 
@@ -113,12 +109,11 @@ public class AudioComposite extends Composite implements IUNIT,
 		instParentView = TimeLineView.getInstance();
 
 		eventManager.addSyncTimeEventListener(ownInst);
-		dataEventManager.addLabelEventListener(ownInst);
+		scriptManager.addScriptDataEventListener(ownInst);
 		parent.addDisposeListener(new DisposeListener() {
 			public void widgetDisposed(DisposeEvent e) {
-				// TODO other components
 				eventManager.removeSyncTimeEventListener(ownInst);
-				dataEventManager.removeLabelEventListener(ownInst);
+				scriptManager.removeScriptDataEventListener(ownInst);
 			}
 		});
 
@@ -360,10 +355,11 @@ public class AudioComposite extends Composite implements IUNIT,
 		newAudio.setImage(button1d.createImage());
 		newAudio.setForeground(getDisplay().getSystemColor(SWT.COLOR_WHITE));
 		guideMarkMap.put(data, newAudio);
-		final IScriptData labelData = data;
 		newAudio.addMouseListener(new MouseAdapter() {
 			public void mouseUp(MouseEvent e) {
-				scriptManager.fireSelectDataEvent(labelData, this);
+				IScriptData data = (IScriptData) e.widget.getData();
+				WebBrowserFactory.getInstance().setCurrentPosition(data.getStartTime());
+				scriptManager.fireDataSelectionEvent(data, ownInst);
 			}
 		});
 		// for TEST
@@ -383,7 +379,7 @@ public class AudioComposite extends Composite implements IUNIT,
 		// for TEST
 
 	}
-
+	
 	private void createLabel(IScriptData data, Color col, int lineNo) {
 		// Calculate target Label position & size
 		int eX = 0;
@@ -922,7 +918,10 @@ public class AudioComposite extends Composite implements IUNIT,
 					&& (e.button == 1) && currentDragStatus) {
 				if (e.widget instanceof Label) {
 					selectLabel = (Label) e.widget;
-					scriptManager.fireSelectDataEvent(data, this);
+					
+					WebBrowserFactory.getInstance().setCurrentPosition(data.getStartTime());
+					
+					scriptManager.fireDataSelectionEvent(data, ownInst);
 				}
 				currentDragStatus = false;
 			} else if (!execDataConvMouseDragged && statusMouseDragged
@@ -977,27 +976,6 @@ public class AudioComposite extends Composite implements IUNIT,
 		}
 	}
 
-	public void handleLabelEvent(LabelEvent e) {
-		switch (e.getEventType()) {
-		case LabelEvent.PUT_ALL_LABEL:
-			clearLabel();
-			createAllLabel(IScriptData.TYPE_AUDIO);
-			break;
-		case LabelEvent.PUT_LABEL:
-			if (e.getData().getType() != IScriptData.TYPE_AUDIO) {
-				return;
-			}
-			putLabel(e.getData(), MODE_PUT);
-			break;
-		case LabelEvent.DELETE_LABEL:
-			if (e.getData().getType() != IScriptData.TYPE_AUDIO) {
-				return;
-			}
-			deleteAudioLabel(e.getData());
-			break;
-		}
-	}
-
 	public void handleSyncTimeEvent(SyncTimeEvent e) {
 		// Synchronize TimeLine view
 		switch (e.getEventType()) {
@@ -1012,20 +990,38 @@ public class AudioComposite extends Composite implements IUNIT,
 	}
 
 	@Override
-	public void handleScriptEvent(ScriptEvent e) {
+	public void handleScriptEvent(ScriptDataEvent e) {
 		switch (e.getEventType()) {
-		case ScriptEvent.CLEAR_DATA:
+		case ScriptDataEvent.CLEAR:
 			clearLabel();
 			break;
-		case ScriptEvent.ADD_DATA:
+		case ScriptDataEvent.ADD:
+			if (e.getData().getType() != IScriptData.TYPE_AUDIO) {
+				return;
+			}
+			putLabel(e.getData(), MODE_PUT);
 			break;
-		case ScriptEvent.ADD_MULTIPUL_DATA:
+		case ScriptDataEvent.MULTIPLE_ADD:
+			// TODO check size of e.getDataCollection()
+			clearLabel();
+			createAllLabel(IScriptData.TYPE_AUDIO);
 			break;
-		case ScriptEvent.DELETE_DATA:
+		case ScriptDataEvent.DELETE:
+			if (e.getData().getType() != IScriptData.TYPE_AUDIO) {
+				return;
+			}
+			deleteAudioLabel(e.getData());
 			break;
-		case ScriptEvent.UPDATE_DATA:
+		case ScriptDataEvent.UPDATE:
+			if (e.getData().getType() != IScriptData.TYPE_AUDIO) {
+				return;
+			}
+			putLabel(e.getData(), MODE_PUT); // TODO updatemode
 			break;
-		case ScriptEvent.UPDATE_MULTIPUL_DATA:
+		case ScriptDataEvent.MULTIPLE_UPDATE:
+			// TODO check size of e.getDataCollection()
+			clearLabel();
+			createAllLabel(IScriptData.TYPE_AUDIO);
 			break;
 		}
 	}

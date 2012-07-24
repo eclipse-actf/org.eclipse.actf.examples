@@ -14,7 +14,6 @@ import org.eclipse.actf.ai.internal.ui.scripteditor.EditPanelTab;
 import org.eclipse.actf.ai.internal.ui.scripteditor.SelectWAVFileTab;
 import org.eclipse.actf.ai.internal.ui.scripteditor.VolumeLevelCanvas;
 import org.eclipse.actf.ai.scripteditor.data.ScriptDataManager;
-import org.eclipse.actf.ai.scripteditor.data.event.DataEventManager;
 import org.eclipse.actf.ai.scripteditor.util.XMLFileMessageBox;
 import org.eclipse.actf.ai.scripteditor.util.XMLFileSaveUtil;
 import org.eclipse.actf.ai.ui.scripteditor.views.EditPanelView;
@@ -31,8 +30,6 @@ public class ClearAction implements IWorkbenchWindowActionDelegate {
 	private EditPanelTab instEditPanelTab = null;
 	private SelectWAVFileTab instSelWavTab = null;
 	private TimeLineView instTimeLine = null;
-
-	private DataEventManager dataEventManager = null;
 
 	public ClearAction() {
 	}
@@ -56,15 +53,11 @@ public class ClearAction implements IWorkbenchWindowActionDelegate {
 		if (scriptManager == null) {
 			scriptManager = ScriptDataManager.getInstance();
 		}
-		if (dataEventManager == null) {
-			dataEventManager = DataEventManager.getInstance();
-		}
-
 	}
 
 	private void closeFile() {
 
-		scriptManager.clearData();
+		scriptManager.clear();
 
 		if (instEditPanelTab != null) {
 			instEditPanelTab.initDispEditPanel();

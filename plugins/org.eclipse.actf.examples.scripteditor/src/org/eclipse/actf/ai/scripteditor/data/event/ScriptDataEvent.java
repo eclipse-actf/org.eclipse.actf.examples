@@ -15,44 +15,46 @@ import java.util.EventObject;
 
 import org.eclipse.actf.ai.scripteditor.data.IScriptData;
 
-public class ScriptEvent extends EventObject {
+public class ScriptDataEvent extends EventObject {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1860351762555451972L;
 
-	public static final int CLEAR_DATA = 0;
-	public static final int SELECT_DATA = 1;
-	public static final int DESELECT_DATA = 2;
-	public static final int PLAY_DATA = 3;
-	// TODO play fin
+	public static final int CLEAR = 0;
+	public static final int ADD = 1;
+	public static final int MULTIPLE_ADD = 2;
+	public static final int DELETE = 3;
+	// multiple remove?
 
-	// Migrate from AudioEvent
-	public static final int ADD_DATA = 5;
-	public static final int ADD_MULTIPUL_DATA = 6;
-	public static final int DELETE_DATA = 7;
-	// TODO multiple remove?
+	public static final int UPDATE = 10;
+	public static final int MULTIPLE_UPDATE = 11;
 
-	public static final int UPDATE_DATA = 9;
-	public static final int UPDATE_MULTIPUL_DATA = 10;
+	public static final int SELECT = 20;
+	public static final int MULTIPLE_SELECT = 21;
+	public static final int DESELECT = 22;
+
+	public static final int PLAY = 33;
+	// TODO play fin, select multi
+
 
 	private int eventType;
 	private IScriptData data = null;
 	private Collection<IScriptData> cData = null;
 
-	public ScriptEvent(int eventType, Object source) {
+	public ScriptDataEvent(int eventType, Object source) {
 		super(source);
 		this.eventType = eventType;
 	}
 
-	public ScriptEvent(int eventType, IScriptData data, Object source) {
+	public ScriptDataEvent(int eventType, IScriptData data, Object source) {
 		super(source);
 		this.eventType = eventType;
 		this.data = data;
 	}
 
-	public ScriptEvent(int eventType, Collection<IScriptData> cData,
+	public ScriptDataEvent(int eventType, Collection<IScriptData> cData,
 			Object source) {
 		super(source);
 		this.eventType = eventType;

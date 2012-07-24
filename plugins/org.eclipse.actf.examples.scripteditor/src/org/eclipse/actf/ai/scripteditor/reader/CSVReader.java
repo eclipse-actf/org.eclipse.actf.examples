@@ -30,8 +30,6 @@ import org.eclipse.actf.ai.scripteditor.data.DataUtil;
 import org.eclipse.actf.ai.scripteditor.data.IScriptData;
 import org.eclipse.actf.ai.scripteditor.data.ScriptDataFactory;
 import org.eclipse.actf.ai.scripteditor.data.ScriptDataManager;
-import org.eclipse.actf.ai.scripteditor.data.event.DataEventManager;
-import org.eclipse.actf.ai.scripteditor.data.event.LabelEvent;
 import org.eclipse.actf.ai.scripteditor.preferences.CSVRulePreferenceUtil;
 import org.eclipse.actf.ai.scripteditor.util.SoundMixer;
 import org.eclipse.actf.ai.scripteditor.util.TimeFormatUtil;
@@ -175,9 +173,8 @@ public class CSVReader implements IUNIT {
 	private boolean currentActive = false;
 	private int currentProcess = CSV_PROC_IDLE;
 
-	private DataEventManager dataEventManager = null;
 	private ScriptDataManager scriptManager = ScriptDataManager.getInstance();
-	private EventManager eventManager = null;
+	private EventManager eventManager = EventManager.getInstance();
 	static List<IScriptData> dataList = new ArrayList<IScriptData>();
 
 	/**
@@ -213,8 +210,6 @@ public class CSVReader implements IUNIT {
 		currentStatus = CSV_ANA_IDLE;
 		currentActive = false;
 
-		dataEventManager = DataEventManager.getInstance();
-		eventManager = EventManager.getInstance();
 	}
 
 	/**
@@ -1034,14 +1029,10 @@ public class CSVReader implements IUNIT {
 
 				if (CSV_SAVE_RULE_RENEWAL == CSVRulePreferenceUtil
 						.getPreferenceCsvSaveRule()) {
-					scriptManager.clearData();
+					scriptManager.clear();
 				}
 
 				scriptManager.addAll(dataList);
-
-				// rewrite all labels at once
-				dataEventManager.fireLabelEvent(new LabelEvent(
-						LabelEvent.PUT_ALL_LABEL, null, this));
 			}
 		});
 

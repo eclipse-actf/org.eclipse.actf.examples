@@ -16,8 +16,6 @@ import java.net.URI;
 import org.eclipse.actf.ai.scripteditor.data.IScriptData;
 import org.eclipse.actf.ai.scripteditor.data.ScriptDataFactory;
 import org.eclipse.actf.ai.scripteditor.data.ScriptDataManager;
-import org.eclipse.actf.ai.scripteditor.data.event.DataEventManager;
-import org.eclipse.actf.ai.scripteditor.data.event.LabelEvent;
 import org.eclipse.actf.ai.scripteditor.util.SoundMixer;
 import org.eclipse.actf.ai.scripteditor.util.TempFileUtil;
 import org.eclipse.actf.ai.scripteditor.util.TimeFormatUtil;
@@ -82,7 +80,6 @@ public class SelectWAVFileTab {
 	// Parameter for multiple selection mode
 	private boolean current_tab_mode = true;
 
-	private DataEventManager dataEventManager = null;
 	private ScriptDataManager scriptManager = ScriptDataManager.getInstance();
 
 	private Button buttonWavOpen;
@@ -93,7 +90,6 @@ public class SelectWAVFileTab {
 	 * Constructor
 	 */
 	public SelectWAVFileTab(CTabFolder parent) {
-		dataEventManager = DataEventManager.getInstance();
 		// Create own instance of Composite
 		ownComposite = new Composite(parent, SWT.NONE);
 
@@ -566,14 +562,8 @@ public class SelectWAVFileTab {
 				if (currentData != null) {
 
 					scriptManager.remove(currentData);
-					dataEventManager.fireLabelEvent(new LabelEvent(
-							LabelEvent.DELETE_LABEL, currentData, this));
-
 					currentData = appendScriptData(currentData);
-
 					scriptManager.add(currentData);
-					dataEventManager.fireLabelEvent(new LabelEvent(
-							LabelEvent.PUT_LABEL, currentData, this));
 
 					// TODO ???
 					// SetUP status to Edit start mode
@@ -622,21 +612,12 @@ public class SelectWAVFileTab {
 
 				if (!deleteAll) {
 					scriptManager.remove(currentData);
-					dataEventManager.fireLabelEvent(new LabelEvent(
-							LabelEvent.DELETE_LABEL, currentData, this));
-
 					currentData.setWavURI(null);
 					currentData.setWavEnabled(false);
 
 					scriptManager.add(currentData);
-
-					dataEventManager.fireLabelEvent(new LabelEvent(
-							LabelEvent.PUT_LABEL, currentData, this));
-
 				} else {
 					scriptManager.remove(currentData);
-					dataEventManager.fireLabelEvent(new LabelEvent(
-							LabelEvent.DELETE_LABEL, currentData, this));
 				}
 
 				initDescriptionData();
