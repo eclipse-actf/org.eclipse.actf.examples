@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
       id="org.eclipse.actf.examples.scripteditor"
-      label="Scripteditor_feature"
-      version="0.1.0.qualifier">
+      label="ACTF Example EASEL feature"
+      version="0.1.0.qualifier"
+      provider-name="Eclipse.org"
+      plugin="org.eclipse.actf.examples.scripteditor">
 
    <description>
       %description
