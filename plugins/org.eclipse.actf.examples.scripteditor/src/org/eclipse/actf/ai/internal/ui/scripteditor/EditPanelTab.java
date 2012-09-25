@@ -474,7 +474,7 @@ public class EditPanelTab implements IUNIT, SyncTimeEventListener {
 			FormData comboLangLData = new FormData();
 			comboLangLData.left = new FormAttachment(0, 1000, 501);
 			comboLangLData.top = new FormAttachment(labelLang, 2);
-			comboLang = new Combo(ownComposite, SWT.DROP_DOWN);
+			comboLang = new Combo(ownComposite, SWT.DROP_DOWN|SWT.READ_ONLY);
 			comboLang.setLayoutData(comboLangLData);
 			comboLang.setItems(langList);
 			if (Locale.getDefault().toString().startsWith("ja")) {
