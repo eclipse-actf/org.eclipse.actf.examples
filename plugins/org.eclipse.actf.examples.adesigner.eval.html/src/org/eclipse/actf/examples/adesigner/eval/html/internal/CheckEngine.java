@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2004, 2016 IBM Corporation and Others
+ * Copyright (c) 2004, 2019 IBM Corporation and Others
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -1420,10 +1420,15 @@ public class CheckEngine extends HtmlTagUtil {
 
 		Set<IStyleSheet> keys = styleSheetsMap.keySet();
 		for (IStyleSheet ss : keys) {
-			if (ss.getHref() != null && ss.getHref().length() > 0
-			// avoid duplication
-					&& BLINK_PATTERN.matcher(styleSheetsMap.get(ss)).matches()) {
-				addCheckerProblem("C_33.2", "(" + ss.getHref() + ")");
+			if (ss.getHref() != null && ss.getHref().length() > 0) {
+				// avoid duplication
+				String style = styleSheetsMap.get(ss);
+				if (style == null) {
+					continue;
+				}
+				if (BLINK_PATTERN.matcher(style).matches()) {
+					addCheckerProblem("C_33.2", "(" + ss.getHref() + ")");
+				}
 			}
 		}
 
@@ -3113,6 +3118,9 @@ public class CheckEngine extends HtmlTagUtil {
 			if (ss.getHref() != null && ss.getHref().length() > 0) {
 				// avoid duplication
 				String style = styleSheetsMap.get(ss);
+				if (style == null) {
+					continue;
+				}
 				if (BEFORE_PATTERN.matcher(style).matches())
 					addCheckerProblem("C_90.0", "(" + ss.getHref() + ")");
 				if (AFTER_PATTERN.matcher(style).matches())
@@ -3648,6 +3656,9 @@ public class CheckEngine extends HtmlTagUtil {
 			if (ss.getHref() != null && ss.getHref().length() > 0) {
 				// avoid duplication
 				String style = styleSheetsMap.get(ss);
+				if (style == null) {
+					continue;
+				}
 				Set<String> colorSelector = new HashSet<String>();
 				Set<String> bgcolorSelector = new HashSet<String>();
 				Set<String> allcolorSelector = new HashSet<String>();

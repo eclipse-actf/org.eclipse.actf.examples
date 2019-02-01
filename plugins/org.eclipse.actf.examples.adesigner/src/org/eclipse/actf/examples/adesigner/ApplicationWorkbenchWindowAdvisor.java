@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2006, 2015 IBM Corporation and Others
+ * Copyright (c) 2006, 2019 IBM Corporation and Others
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -12,9 +12,7 @@ package org.eclipse.actf.examples.adesigner;
 
 import org.eclipse.actf.examples.adesigner.ui.actions.SwitchModeAction;
 import org.eclipse.actf.examples.adesigner.ui.preferences.IPreferenceConstants;
-import org.eclipse.actf.model.flash.proxy.FlashCacheUtil;
 import org.eclipse.actf.model.ui.util.PerspectiveListenerForBrowserLaunch;
-import org.eclipse.actf.visualization.ui.IVisualizationPerspective;
 import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.preference.IPreferenceNode;
@@ -71,7 +69,7 @@ public class ApplicationWorkbenchWindowAdvisor extends WorkbenchWindowAdvisor {
 					}
 				});
 
-		FlashCacheUtil.clearCacheForStartup();
+//		FlashCacheUtil.clearCacheForStartup();
 
 		PerspectiveListenerForBrowserLaunch
 				.setTargetUrl(PlatformUI
@@ -83,9 +81,9 @@ public class ApplicationWorkbenchWindowAdvisor extends WorkbenchWindowAdvisor {
 	}
 
 	private void checkChache(String id) {
-		if (IVisualizationPerspective.ID_FLASH_PERSPECTIVE.equals(id)) {
-			FlashCacheUtil.checkCache();
-		}
+//		if (IVisualizationPerspective.ID_FLASH_PERSPECTIVE.equals(id)) {
+//			FlashCacheUtil.checkCache();
+//		}
 	}
 
 	@SuppressWarnings({ "nls" })

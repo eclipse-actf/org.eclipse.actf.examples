@@ -20,8 +20,9 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.actf.model.dom.dombycom,
  org.eclipse.actf.util.vocab,
  org.eclipse.actf.examples.scripteditor.doc
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
 Bundle-localization: plugin
 Import-Package: org.eclipse.actf.model.flash
 Bundle-Vendor: Eclipse ACTF Project
+Automatic-Module-Name: org.eclipse.actf.examples.scripteditor

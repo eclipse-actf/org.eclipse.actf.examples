@@ -38,58 +38,6 @@
    <vm>
    </vm>
 
-   <plugins>
-      <plugin id="com.ibm.icu"/>
-      <plugin id="org.apache.commons.jxpath"/>
-      <plugin id="org.eclipse.actf.ai.audio.io"/>
-      <plugin id="org.eclipse.actf.ai.fennec"/>
-      <plugin id="org.eclipse.actf.ai.navigator"/>
-      <plugin id="org.eclipse.actf.ai.query"/>
-      <plugin id="org.eclipse.actf.ai.tts.protalker"/>
-      <plugin id="org.eclipse.actf.ai.tts.sapi"/>
-      <plugin id="org.eclipse.actf.ai.voice"/>
-      <plugin id="org.eclipse.actf.ai.xmlstore"/>
-      <plugin id="org.eclipse.actf.core"/>
-      <plugin id="org.eclipse.actf.examples.scripteditor"/>
-      <plugin id="org.eclipse.actf.model.dom.dombycom"/>
-      <plugin id="org.eclipse.actf.model.dom.dombycom.flash" fragment="true"/>
-      <plugin id="org.eclipse.actf.model.dom.html"/>
-      <plugin id="org.eclipse.actf.model.flash"/>
-      <plugin id="org.eclipse.actf.model.flash.proxy"/>
-      <plugin id="org.eclipse.actf.model.ui"/>
-      <plugin id="org.eclipse.actf.model.ui.editors.ie"/>
-      <plugin id="org.eclipse.actf.ui"/>
-      <plugin id="org.eclipse.actf.util.httpproxy"/>
-      <plugin id="org.eclipse.actf.util.jxpath" fragment="true"/>
-      <plugin id="org.eclipse.actf.util.vocab"/>
-      <plugin id="org.eclipse.actf.util.win32"/>
-      <plugin id="org.eclipse.actf.util.win32.comclutch"/>
-      <plugin id="org.eclipse.core.commands"/>
-      <plugin id="org.eclipse.core.contenttype"/>
-      <plugin id="org.eclipse.core.databinding"/>
-      <plugin id="org.eclipse.core.databinding.observable"/>
-      <plugin id="org.eclipse.core.databinding.property"/>
-      <plugin id="org.eclipse.core.expressions"/>
-      <plugin id="org.eclipse.core.jobs"/>
-      <plugin id="org.eclipse.core.runtime"/>
-      <plugin id="org.eclipse.core.runtime.compatibility.registry" fragment="true"/>
-      <plugin id="org.eclipse.equinox.app"/>
-      <plugin id="org.eclipse.equinox.common"/>
-      <plugin id="org.eclipse.equinox.preferences"/>
-      <plugin id="org.eclipse.equinox.registry"/>
-      <plugin id="org.eclipse.help"/>
-      <plugin id="org.eclipse.jface"/>
-      <plugin id="org.eclipse.jface.databinding"/>
-      <plugin id="org.eclipse.osgi"/>
-      <plugin id="org.eclipse.swt"/>
-      <plugin id="org.eclipse.swt.win32.win32.x86" fragment="true"/>
-      <plugin id="org.eclipse.ui"/>
-      <plugin id="org.eclipse.ui.forms"/>
-      <plugin id="org.eclipse.ui.intro"/>
-      <plugin id="org.eclipse.ui.views"/>
-      <plugin id="org.eclipse.ui.workbench"/>
-   </plugins>
-
    <features>
       <feature id="org.eclipse.actf.examples.scripteditor"/>
       <feature id="org.eclipse.help"/>
